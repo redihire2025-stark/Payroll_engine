@@ -1,7 +1,7 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/shared/ui/Button';
 import { Field, Input } from '@/shared/ui/Input';
-import { useSession } from '@/shared/lib/session';
+import { useSession, demoUser, landingRouteFor } from '@/shared/lib/session';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -10,7 +10,9 @@ export default function Login() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     login();
-    navigate('/admin');
+    // One login for everyone — the destination is decided by the
+    // authenticated user's role(s), never by which URL they opened.
+    navigate(landingRouteFor(demoUser));
   }
 
   return (
@@ -35,6 +37,10 @@ export default function Login() {
           <p className="mt-4 text-[14px] leading-relaxed text-[#AEB4C2]">
             Every earning, deduction and statutory number is traceable back to the rule that produced it — for every
             employee, every pay cycle.
+          </p>
+          <p className="mt-5 text-[12.5px] leading-relaxed text-[#8B93A1]">
+            One login for your whole organization — we route admins to the Admin Console and employees to the
+            Employee app automatically, based on the access they've been granted.
           </p>
         </div>
         <div className="relative text-[12px] text-[#8B93A1]">© 2026 Payroll OS · Meridian Textiles Pvt Ltd workspace</div>
@@ -69,7 +75,13 @@ export default function Login() {
           </div>
 
           <p className="text-center text-[12.5px] text-text-faint">
-            Invitation-only workspace — contact your HR admin for access.
+            New organization?{' '}
+            <Link to="/auth/register" className="font-semibold text-accent">
+              Create your workspace
+            </Link>
+          </p>
+          <p className="mt-2 text-center text-[11.5px] text-text-faint">
+            Joining an existing company? Ask your HR admin to grant you a portal seat.
           </p>
         </div>
       </div>

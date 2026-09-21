@@ -1,8 +1,9 @@
 import { Link, useParams } from 'react-router-dom';
 import { Button } from '@/shared/ui/Button';
 import { DownloadIcon } from '@/shared/ui/icons';
+import { OrgLogo } from '@/shared/ui/OrgLogo';
 import { formatINR } from '@/shared/lib/format';
-import { currentRunItems, employees, payrollRuns } from '@/shared/lib/mockData';
+import { currentRunItems, employees, payrollRuns, company } from '@/shared/lib/mockData';
 
 export default function Payslip() {
   const { id, employeeId } = useParams();
@@ -22,9 +23,12 @@ export default function Payslip() {
 
       <div className="mx-auto w-full max-w-2xl rounded-xl border border-border bg-white p-10 shadow-card">
         <div className="flex items-start justify-between border-b border-border-soft pb-6">
-          <div>
-            <div className="text-[16px] font-bold text-text">Meridian Textiles Pvt Ltd</div>
-            <div className="mt-0.5 text-[12px] text-text-faint">Plot 44, Whitefield Industrial Area, Bengaluru 560066</div>
+          <div className="flex items-center gap-3.5">
+            <OrgLogo name={company.name} url={company.logoUrl} size={44} />
+            <div>
+              <div className="text-[16px] font-bold text-text">{company.name}</div>
+              <div className="mt-0.5 text-[12px] text-text-faint">{company.address}</div>
+            </div>
           </div>
           <div className="text-right">
             <div className="text-[13px] font-semibold text-text">Payslip</div>

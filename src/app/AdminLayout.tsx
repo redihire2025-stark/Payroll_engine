@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useSession } from '@/shared/lib/session';
 import { Avatar } from '@/shared/ui/Avatar';
+import { OrgLogo } from '@/shared/ui/OrgLogo';
 import {
   GridIcon,
   BuildingIcon,
@@ -97,7 +98,8 @@ export default function AdminLayout() {
               <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full border border-white bg-danger" />
             </div>
             <div className="h-6 w-px bg-border" />
-            <div className="flex items-center gap-1.5 text-[12.5px] text-text-muted">
+            <div className="flex items-center gap-2 text-[12.5px] font-medium text-text-muted">
+              <OrgLogo name={user?.companyName ?? ''} url={user?.companyLogoUrl} size={22} />
               {user?.companyName}
               <ChevronDownIcon width={13} height={13} className="text-text-faint" />
             </div>

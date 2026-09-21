@@ -3,6 +3,8 @@ import { SessionProvider } from '@/shared/lib/session';
 import AdminLayout from './AdminLayout';
 import EssLayout from './EssLayout';
 import Login from '@/routes/auth/Login';
+import Register from '@/routes/auth/Register';
+import Company from '@/routes/admin/Company';
 import Dashboard from '@/routes/admin/Dashboard';
 import Employees from '@/routes/admin/Employees';
 import EmployeeDetail from '@/routes/admin/EmployeeDetail';
@@ -27,9 +29,11 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/admin" replace />} />
         <Route path="/auth/login" element={<Login />} />
+        <Route path="/auth/register" element={<Register />} />
 
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
+          <Route path="company" element={<Company />} />
           <Route path="employees" element={<Employees />} />
           <Route path="employees/:id" element={<EmployeeDetail />} />
           <Route path="attendance" element={<Attendance />} />

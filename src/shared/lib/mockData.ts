@@ -63,6 +63,28 @@ export const employees: Employee[] = names.map((name, i) => ({
 
 export const currentEmployee = employees[5]; // Ananya Rao — logged-in payroll admin, also an employee
 
+export interface Company {
+  id: string;
+  name: string;
+  legalName: string;
+  logoUrl: string | null;
+  address: string;
+  country: string;
+  employeeSeatLimit: number;
+  seatsUsed: number; // live count of employees with portal access granted — never a stored total
+}
+
+export const company: Company = {
+  id: 'company-1',
+  name: 'Meridian Textiles Pvt Ltd',
+  legalName: 'Meridian Textiles Private Limited',
+  logoUrl: null, // no logo uploaded yet — UI falls back to a generated monogram
+  address: 'Plot 44, Whitefield Industrial Area, Bengaluru 560066',
+  country: 'India',
+  employeeSeatLimit: 200,
+  seatsUsed: 142,
+};
+
 export interface AttendanceCorrection {
   id: string;
   employeeId: string;

@@ -4,7 +4,7 @@ import { Badge } from '@/shared/ui/Badge';
 import { SearchInput, Select } from '@/shared/ui/Input';
 import { Avatar } from '@/shared/ui/Avatar';
 import { PlusIcon } from '@/shared/ui/icons';
-import { employees } from '@/shared/lib/mockData';
+import { employees, company } from '@/shared/lib/mockData';
 
 const statusTone = { active: 'success', on_leave: 'warning', exited: 'neutral' } as const;
 const statusLabel = { active: 'Active', on_leave: 'On Leave', exited: 'Exited' } as const;
@@ -19,7 +19,18 @@ export default function Employees() {
           <h1 className="text-[22px] font-bold text-text">Employees</h1>
           <p className="mt-0.5 text-[13px] text-text-faint">142 employees across 3 branches</p>
         </div>
-        <Button variant="primary" icon={<PlusIcon width={15} height={15} />}>Add Employee</Button>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="text-[12px] font-semibold text-text">{company.seatsUsed} / {company.employeeSeatLimit} seats used</div>
+            <div className="mt-1 h-1.5 w-32 rounded-full bg-border-soft">
+              <div
+                className="h-1.5 rounded-full bg-accent"
+                style={{ width: `${Math.round((company.seatsUsed / company.employeeSeatLimit) * 100)}%` }}
+              />
+            </div>
+          </div>
+          <Button variant="primary" icon={<PlusIcon width={15} height={15} />}>Add Employee</Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">
