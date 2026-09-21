@@ -5,6 +5,7 @@ import EssLayout from './EssLayout';
 import Login from '@/routes/auth/Login';
 import Register from '@/routes/auth/Register';
 import Company from '@/routes/admin/Company';
+import PayslipPrint from '@/routes/print/PayslipPrint';
 import Dashboard from '@/routes/admin/Dashboard';
 import Employees from '@/routes/admin/Employees';
 import EmployeeDetail from '@/routes/admin/EmployeeDetail';
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/admin" replace />} />
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
+        <Route path="/print/payslip/:id/:employeeId" element={<PayslipPrint />} />
 
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
