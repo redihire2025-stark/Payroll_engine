@@ -6,12 +6,15 @@
  */
 export function OrgLogo({ name, url, size = 32 }: { name: string; url?: string | null; size?: number }) {
   if (url) {
+    // Uploaded logos are rarely square (most are wide wordmarks) — constrain
+    // by height and let width flow, rather than force-cropping into a
+    // square box the way the monogram fallback below renders.
     return (
       <img
         src={url}
         alt={`${name} logo`}
-        style={{ width: size, height: size }}
-        className="rounded-lg object-cover"
+        style={{ height: size, width: 'auto', maxWidth: size * 4 }}
+        className="object-contain"
       />
     );
   }

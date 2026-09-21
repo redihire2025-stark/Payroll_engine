@@ -46,7 +46,7 @@ export const employees: Employee[] = names.map((name, i) => ({
   status: i === 12 ? 'on_leave' : i === 13 ? 'exited' : 'active',
   doj: `20${20 + (i % 5)}-0${(i % 9) + 1}-1${i % 2}`,
   managerId: i === 0 ? null : 'emp-6',
-  email: `${name.toLowerCase().replace(' ', '.')}@meridiantextiles.in`,
+  email: `${name.toLowerCase().replace(' ', '.')}@redihireglobal.com`,
   phone: `+91 98${(10000000 + i * 137).toString().slice(0, 8)}`,
   dob: `199${i % 9}-0${(i % 9) + 1}-12`,
   gender: i % 3 === 0 ? 'Female' : 'Male',
@@ -76,10 +76,10 @@ export interface Company {
 
 export const company: Company = {
   id: 'company-1',
-  name: 'Meridian Textiles Pvt Ltd',
-  legalName: 'Meridian Textiles Private Limited',
-  logoUrl: null, // no logo uploaded yet — UI falls back to a generated monogram
-  address: 'Plot 44, Whitefield Industrial Area, Bengaluru 560066',
+  name: 'Redihire Global Services',
+  legalName: 'Redihire Global Services Pvt Ltd', // placeholder — replace with the real registered legal name
+  logoUrl: '/branding/redihire-logo.jpg',
+  address: 'Registered Office Address', // placeholder — replace with the real address
   country: 'India',
   employeeSeatLimit: 200,
   seatsUsed: 142,

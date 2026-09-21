@@ -43,7 +43,7 @@ export default function Login() {
             Employee app automatically, based on the access they've been granted.
           </p>
         </div>
-        <div className="relative text-[12px] text-[#8B93A1]">© 2026 Payroll OS · Meridian Textiles Pvt Ltd workspace</div>
+        <div className="relative text-[12px] text-[#8B93A1]">© 2026 Payroll OS · Redihire Global Services workspace</div>
       </div>
 
       <div className="flex w-full flex-1 items-center justify-center bg-white px-8">
@@ -53,7 +53,7 @@ export default function Login() {
 
           <form className="mt-7 flex flex-col gap-4" onSubmit={handleSubmit}>
             <Field label="Work email">
-              <Input type="email" placeholder="you@company.com" defaultValue="ananya.rao@meridiantextiles.in" required />
+              <Input type="email" placeholder="you@company.com" defaultValue="ananya.rao@redihireglobal.com" required />
             </Field>
             <Field label="Password">
               <Input type="password" placeholder="••••••••••" defaultValue="••••••••••" required />

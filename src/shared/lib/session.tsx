@@ -27,10 +27,10 @@ export function landingRouteFor(user: SessionUser): '/admin' | '/app' {
 export const demoUser: SessionUser = {
   id: 'u-1001',
   name: 'Ananya Rao',
-  email: 'ananya.rao@meridiantextiles.in',
+  email: 'ananya.rao@redihireglobal.com',
   roles: ['payroll_admin', 'hr_admin'],
-  companyName: 'Meridian Textiles Pvt Ltd',
-  companyLogoUrl: null,
+  companyName: 'Redihire Global Services',
+  companyLogoUrl: '/branding/redihire-logo.jpg',
   employeeId: 'EMP-0007',
   isManager: true,
 };
