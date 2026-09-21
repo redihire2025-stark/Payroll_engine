@@ -43,7 +43,8 @@ export default function Company() {
           <CardHeader title="Organization Details" />
           <div className="flex flex-col gap-4 px-5 py-5">
             <Field label="Organization name"><Input defaultValue={company.name} /></Field>
-            <Field label="Legal name"><Input defaultValue={company.legalName} /></Field>
+            <Field label="Legal name"><Input defaultValue={company.legalNameFull} /></Field>
+            <Field label="Registered office"><Input defaultValue={company.regOffice} /></Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Country"><Select defaultValue="IN"><option value="IN">India</option></Select></Field>
               <Field label="Default Currency"><Select defaultValue="INR"><option value="INR">INR (₹)</option></Select></Field>

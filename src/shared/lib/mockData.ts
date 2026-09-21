@@ -34,11 +34,11 @@ const names = [
 ];
 const departments = ['Engineering', 'Sales', 'Finance', 'Human Resources', 'Operations', 'Customer Success'];
 const designations = ['Software Engineer', 'Sales Executive', 'Accountant', 'HR Executive', 'Operations Manager', 'Support Lead'];
-const branches = ['Bengaluru HQ', 'Mumbai Office', 'Pune Office'];
+const branches = ['Hyderabad HQ', 'Mumbai Office', 'Pune Office'];
 
 export const employees: Employee[] = names.map((name, i) => ({
   id: `emp-${i + 1}`,
-  code: `EMP-${String(i + 1).padStart(4, '0')}`,
+  code: `RH${String(i + 1).padStart(4, '0')}`,
   name,
   designation: designations[i % designations.length],
   department: departments[i % departments.length],
@@ -61,28 +61,62 @@ export const employees: Employee[] = names.map((name, i) => ({
   emergencyContact: 'Spouse · +91 98765 4321' + (i % 10),
 }));
 
+// Aligned exactly with Redihire's real payslip sample (RH0005 / D Rajasree,
+// HR Executive) so the generated document can be verified field-for-field
+// against the format the company already issues to employees.
+employees[4] = {
+  ...employees[4],
+  name: 'D Rajasree',
+  code: 'RH0005',
+  designation: 'HR Executive',
+  department: 'HR Department',
+  branch: 'Hyderabad HQ',
+  status: 'active',
+  doj: '2025-04-07',
+  email: 'd.rajasree@redihireglobal.com',
+};
+
 export const currentEmployee = employees[5]; // Ananya Rao — logged-in payroll admin, also an employee
 
 export interface Company {
   id: string;
   name: string;
-  legalName: string;
+  /** Short legal suffix used in the payslip letterhead title, e.g. "PVT LTD". */
+  legalSuffixShort: string;
+  /** Full legal name used in the payslip footer, e.g. "...PRIVATE LIMITED". */
+  legalNameFull: string;
   logoUrl: string | null;
-  address: string;
+  regOffice: string;
+  phone: string;
+  website: string;
+  email: string;
+  cin: string;
+  state: string; // used for the Professional Tax "as per <state> rules" note
   country: string;
   employeeSeatLimit: number;
   seatsUsed: number; // live count of employees with portal access granted — never a stored total
+  /** Payslip letterhead styling: the leading substring of the uppercased name shown in brand accent color (e.g. "REDI" of "REDIHIRE"). */
+  brandAccentColor: string;
+  nameAccentPrefixLength: number;
 }
 
 export const company: Company = {
   id: 'company-1',
   name: 'Redihire Global Services',
-  legalName: 'Redihire Global Services Pvt Ltd', // placeholder — replace with the real registered legal name
+  legalSuffixShort: 'PVT LTD',
+  legalNameFull: 'REDIHIRE GLOBAL SERVICES PRIVATE LIMITED',
   logoUrl: '/branding/redihire-logo.jpg',
-  address: 'Registered Office Address', // placeholder — replace with the real address
+  regOffice: '3-11-37/2, Plot no – 16, Road no – 4, RTC Colony, LB Nagar, Hyderabad, Telangana – 74',
+  phone: '8143332692',
+  website: 'www.redihire.com',
+  email: 'info@redihire.com',
+  cin: 'U70200TS2025PTC195728',
+  state: 'Telangana',
   country: 'India',
   employeeSeatLimit: 200,
   seatsUsed: 142,
+  brandAccentColor: '#E42328',
+  nameAccentPrefixLength: 4, // "REDI" of "REDIHIRE"
 };
 
 export interface AttendanceCorrection {
@@ -188,14 +222,17 @@ export interface PayrollRun {
   net: number;
   status: 'draft' | 'calculating' | 'calculated' | 'under_review' | 'approved' | 'locked' | 'paid' | 'cancelled';
   createdBy: string;
+  totalDaysInMonth: number; // calendar days in the pay period — printed as "Working Days" on the payslip
 }
 
 export const payrollRuns: PayrollRun[] = [
-  { id: 'run-2026-09', period: 'September 2026', runType: 'regular', employeeCount: 142, gross: 9842000, net: 8213400, status: 'under_review', createdBy: 'Ananya Rao' },
-  { id: 'run-2026-08', period: 'August 2026', runType: 'regular', employeeCount: 140, gross: 9695000, net: 8095200, status: 'paid', createdBy: 'Ananya Rao' },
-  { id: 'run-2026-07', period: 'July 2026', runType: 'regular', employeeCount: 139, gross: 9612000, net: 8034100, status: 'paid', createdBy: 'Ananya Rao' },
-  { id: 'run-2026-06', period: 'June 2026', runType: 'regular', employeeCount: 138, gross: 9540500, net: 7981000, status: 'paid', createdBy: 'Rohan Mehta' },
-  { id: 'run-2026-05-fnf', period: 'May 2026 · Off-cycle FnF', runType: 'fnf', employeeCount: 2, gross: 186000, net: 158400, status: 'locked', createdBy: 'Ananya Rao' },
+  { id: 'run-2026-09', period: 'September 2026', runType: 'regular', employeeCount: 142, gross: 9842000, net: 8213400, status: 'under_review', createdBy: 'Ananya Rao', totalDaysInMonth: 30 },
+  { id: 'run-2026-08', period: 'August 2026', runType: 'regular', employeeCount: 140, gross: 9695000, net: 8095200, status: 'paid', createdBy: 'Ananya Rao', totalDaysInMonth: 31 },
+  { id: 'run-2026-07', period: 'July 2026', runType: 'regular', employeeCount: 139, gross: 9612000, net: 8034100, status: 'paid', createdBy: 'Ananya Rao', totalDaysInMonth: 31 },
+  { id: 'run-2026-06', period: 'June 2026', runType: 'regular', employeeCount: 138, gross: 9540500, net: 7981000, status: 'paid', createdBy: 'Rohan Mehta', totalDaysInMonth: 30 },
+  { id: 'run-2026-05-fnf', period: 'May 2026 · Off-cycle FnF', runType: 'fnf', employeeCount: 2, gross: 186000, net: 158400, status: 'locked', createdBy: 'Ananya Rao', totalDaysInMonth: 31 },
+  // Matches Redihire's real payslip sample exactly (RH0005 / D Rajasree) — see currentRunItems override below.
+  { id: 'run-2025-10', period: "October 2025", runType: 'regular', employeeCount: 1, gross: 25000, net: 24800, status: 'paid', createdBy: 'Ananya Rao', totalDaysInMonth: 31 },
 ];
 
 export interface PayrollItem {
@@ -229,9 +266,23 @@ export const currentRunItems: PayrollItem[] = employees
       tds,
       otherDeductions,
       net: gross - pf - esi - pt - tds - otherDeductions,
-      lopDays: i === 4 ? 1 : 0,
+      lopDays: 0,
     };
   });
+
+// Aligned exactly with Redihire's real payslip sample (RH0005 / D Rajasree,
+// October 2025) — see PayslipDocument.tsx and the run-2025-10 entry above.
+currentRunItems[4] = {
+  employeeId: 'emp-5',
+  gross: 25000,
+  pf: 0,
+  esi: 0,
+  pt: 200,
+  tds: 0,
+  otherDeductions: 0,
+  net: 24800,
+  lopDays: 0,
+};
 
 export const auditLogEntries = [
   { id: 'al-1', time: '21 Sep 2026, 10:42 AM', actor: 'Ananya Rao', action: 'CALCULATED', entity: 'Payroll Run · September 2026', ip: '103.21.244.10' },
