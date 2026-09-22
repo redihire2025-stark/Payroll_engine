@@ -6,6 +6,7 @@
 import type { Handler } from '@netlify/functions';
 import { sendEmail } from './_shared/resend';
 import { json } from './_shared/http';
+import { errorMessage } from './_shared/errors';
 
 interface SendNotificationRequest {
   to?: string | string[];
@@ -25,6 +26,6 @@ export const handler: Handler = async (event) => {
     await sendEmail(body.to, body.subject, body.html);
     return json({ ok: true });
   } catch (err) {
-    return json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
+    return json({ error: errorMessage(err) }, 500);
   }
 };

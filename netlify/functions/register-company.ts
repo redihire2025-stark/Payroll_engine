@@ -10,6 +10,7 @@
 import type { Handler } from '@netlify/functions';
 import { getSupabaseAdmin } from './_shared/supabaseAdmin';
 import { json } from './_shared/http';
+import { errorMessage } from './_shared/errors';
 
 interface RegisterCompanyRequest {
   userId?: string;
@@ -74,6 +75,6 @@ export const handler: Handler = async (event) => {
 
     return json({ companyId: company.id, companyName: company.name });
   } catch (err) {
-    return json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
+    return json({ error: errorMessage(err) }, 500);
   }
 };
