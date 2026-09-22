@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader } from '@/shared/ui/Card';
 import { StatTile } from '@/shared/ui/StatTile';
 import { Badge } from '@/shared/ui/Badge';
@@ -7,14 +7,20 @@ import { Avatar } from '@/shared/ui/Avatar';
 import { EmptyState, ErrorState, LoadingRows } from '@/shared/ui/EmptyState';
 import { ClockIcon } from '@/shared/ui/icons';
 import { useSession } from '@/shared/lib/session';
-import { listCorrections } from '@/modules/attendance/attendanceService';
+import { listCorrections, decideCorrection } from '@/modules/attendance/attendanceService';
 
 const cols = '1.8fr 1fr 1fr 1fr 2fr 1fr 1.2fr';
 
 export default function Attendance() {
   const { user } = useSession();
   const companyId = user!.companyId;
+  const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery({ queryKey: ['attendance-corrections', companyId], queryFn: () => listCorrections(companyId) });
+
+  const decisionMutation = useMutation({
+    mutationFn: ({ id, decision }: { id: string; decision: 'approved' | 'rejected' }) => decideCorrection(id, decision, companyId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['attendance-corrections', companyId] }),
+  });
 
   const corrections = data ?? [];
   const pending = corrections.filter((c) => c.status === 'pending');
@@ -64,8 +70,22 @@ export default function Attendance() {
                 <div className="flex justify-end gap-1.5">
                   {c.status === 'pending' && (
                     <>
-                      <Button size="sm" variant="secondary">Reject</Button>
-                      <Button size="sm" variant="primary">Approve</Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={decisionMutation.isPending}
+                        onClick={() => decisionMutation.mutate({ id: c.id, decision: 'rejected' })}
+                      >
+                        Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        disabled={decisionMutation.isPending}
+                        onClick={() => decisionMutation.mutate({ id: c.id, decision: 'approved' })}
+                      >
+                        Approve
+                      </Button>
                     </>
                   )}
                 </div>

@@ -1,18 +1,41 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { EmptyState, ErrorState } from '@/shared/ui/EmptyState';
 import { BellIcon, ClockIcon } from '@/shared/ui/icons';
 import { useSession } from '@/shared/lib/session';
 import { listMyLeaveBalances } from '@/modules/leave/leaveService';
+import { getTodayAttendance, punchIn, punchOut } from '@/modules/attendance/attendanceService';
+
+function formatTime(iso: string | null): string | null {
+  if (!iso) return null;
+  return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+}
 
 export default function EssHome() {
   const { user } = useSession();
   const employeeId = user?.employeeId;
+  const companyId = user?.companyId;
   const year = new Date().getFullYear();
+  const queryClient = useQueryClient();
 
   const balancesQuery = useQuery({
     queryKey: ['leave-balances', employeeId, year],
     queryFn: () => listMyLeaveBalances(employeeId!, year),
     enabled: Boolean(employeeId),
+  });
+
+  const attendanceQuery = useQuery({
+    queryKey: ['today-attendance', employeeId],
+    queryFn: () => getTodayAttendance(employeeId!),
+    enabled: Boolean(employeeId),
+  });
+
+  const punchInMutation = useMutation({
+    mutationFn: () => punchIn(companyId!, employeeId!),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['today-attendance', employeeId] }),
+  });
+  const punchOutMutation = useMutation({
+    mutationFn: () => punchOut(employeeId!),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['today-attendance', employeeId] }),
   });
 
   if (!employeeId) {
@@ -25,6 +48,15 @@ export default function EssHome() {
       </div>
     );
   }
+
+  const today = attendanceQuery.data;
+  const checkedIn = Boolean(today?.checkIn);
+  const checkedOut = Boolean(today?.checkOut);
+  const punchBusy = punchInMutation.isPending || punchOutMutation.isPending;
+
+  let statusLabel = 'Not clocked in';
+  if (checkedIn && !checkedOut) statusLabel = `Clocked in at ${formatTime(today!.checkIn)}`;
+  if (checkedOut) statusLabel = `Clocked out at ${formatTime(today!.checkOut)} · in at ${formatTime(today!.checkIn)}`;
 
   return (
     <div className="flex flex-col gap-5 px-5 pt-6">
@@ -43,10 +75,28 @@ export default function EssHome() {
           <div>
             <div className="flex items-center gap-1.5 text-[12px] text-white/75">
               <ClockIcon width={14} height={14} />
-              Not clocked in
+              {statusLabel}
             </div>
           </div>
-          <button className="rounded-lg bg-white px-5 py-3 text-[13px] font-bold text-accent-strong">Punch In</button>
+          {checkedOut ? (
+            <span className="rounded-lg bg-white/15 px-5 py-3 text-[13px] font-bold text-white">Day complete</span>
+          ) : checkedIn ? (
+            <button
+              className="rounded-lg bg-white px-5 py-3 text-[13px] font-bold text-accent-strong disabled:opacity-60"
+              disabled={punchBusy}
+              onClick={() => punchOutMutation.mutate()}
+            >
+              {punchOutMutation.isPending ? 'Punching out…' : 'Punch Out'}
+            </button>
+          ) : (
+            <button
+              className="rounded-lg bg-white px-5 py-3 text-[13px] font-bold text-accent-strong disabled:opacity-60"
+              disabled={punchBusy}
+              onClick={() => punchInMutation.mutate()}
+            >
+              {punchInMutation.isPending ? 'Punching in…' : 'Punch In'}
+            </button>
+          )}
         </div>
       </div>
 
