@@ -1,7 +1,9 @@
+import { useQuery } from '@tanstack/react-query';
 import { Avatar } from '@/shared/ui/Avatar';
 import { ChevronRightIcon, FileTextIcon, ShieldIcon, BellIcon, LogOutIcon } from '@/shared/ui/icons';
+import { ErrorState } from '@/shared/ui/EmptyState';
 import { useSession } from '@/shared/lib/session';
-import { currentEmployee } from '@/shared/lib/mockData';
+import { getEmployee } from '@/modules/employee/employeeService';
 
 function Section({ title, rows }: { title: string; rows: { label: string; value: string }[] }) {
   return (
@@ -18,33 +20,35 @@ function Section({ title, rows }: { title: string; rows: { label: string; value:
 }
 
 export default function EssProfile() {
-  const { logout } = useSession();
+  const { user, logout } = useSession();
+  const { data: employee, error } = useQuery({
+    queryKey: ['employee', user?.employeeId],
+    queryFn: () => getEmployee(user!.employeeId),
+    enabled: Boolean(user?.employeeId),
+  });
 
   return (
     <div className="flex flex-col gap-4 px-5 pt-6">
       <div className="flex items-center gap-3.5">
-        <Avatar name={currentEmployee.name} size={56} />
+        <Avatar name={user?.name ?? ''} size={56} />
         <div>
-          <div className="text-[17px] font-bold text-text">{currentEmployee.name}</div>
-          <div className="text-[12.5px] text-text-faint">{currentEmployee.designation} · {currentEmployee.code}</div>
+          <div className="text-[17px] font-bold text-text">{user?.name}</div>
+          <div className="text-[12.5px] text-text-faint">{employee?.designation ?? user?.email}</div>
         </div>
       </div>
 
-      <Section
-        title="Personal Info"
-        rows={[
-          { label: 'Phone', value: currentEmployee.phone },
-          { label: 'Personal Email', value: currentEmployee.email },
-          { label: 'Date of Birth', value: currentEmployee.dob },
-        ]}
-      />
-      <Section
-        title="Bank Details"
-        rows={[
-          { label: 'Account No.', value: currentEmployee.bankAccountMasked },
-          { label: 'IFSC', value: currentEmployee.ifsc },
-        ]}
-      />
+      {error && <ErrorState message={(error as Error).message} />}
+
+      {employee && (
+        <Section
+          title="Personal Info"
+          rows={[
+            { label: 'Phone', value: employee.phone ?? '—' },
+            { label: 'Personal Email', value: employee.personalEmail ?? '—' },
+            { label: 'Date of Birth', value: employee.dob ?? '—' },
+          ]}
+        />
+      )}
 
       <div className="rounded-xl border border-border bg-surface">
         {[
@@ -60,7 +64,7 @@ export default function EssProfile() {
             <ChevronRightIcon width={16} height={16} className="text-text-faint" />
           </button>
         ))}
-        <button onClick={logout} className="flex w-full items-center gap-3 px-4 py-3.5 text-[13px] font-medium text-danger">
+        <button onClick={() => logout()} className="flex w-full items-center gap-3 px-4 py-3.5 text-[13px] font-medium text-danger">
           <LogOutIcon width={17} height={17} />
           Sign Out
         </button>

@@ -1,55 +1,56 @@
-import { ChevronLeftIcon, ChevronRightIcon } from '@/shared/ui/icons';
-import { myAttendanceMonth } from '@/shared/lib/mockData';
+import { useQuery } from '@tanstack/react-query';
+import { ChevronLeftIcon, ChevronRightIcon, ClockIcon } from '@/shared/ui/icons';
+import { EmptyState, ErrorState, LoadingRows } from '@/shared/ui/EmptyState';
+import { useSession } from '@/shared/lib/session';
+import { listMyAttendance } from '@/modules/attendance/attendanceService';
 
-const statusColor: Record<string, string> = {
-  present: 'bg-success', late: 'bg-warning', on_leave: 'bg-info', weekend: 'bg-border', holiday: 'bg-border', absent: 'bg-danger',
-};
-const statusLabel: Record<string, string> = {
-  present: 'Present', late: 'Late', on_leave: 'On Leave', weekend: 'Weekend', holiday: 'Holiday', absent: 'Absent',
-};
+function monthBounds(date: Date) {
+  const start = new Date(date.getFullYear(), date.getMonth(), 1);
+  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
+}
 
 export default function EssAttendance() {
+  const { user } = useSession();
+  const { start, end } = monthBounds(new Date());
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['my-attendance', user?.employeeId, start, end],
+    queryFn: () => listMyAttendance(user!.employeeId, start, end),
+    enabled: Boolean(user?.employeeId),
+  });
+  const days = data ?? [];
+
   return (
     <div className="flex flex-col gap-4 px-5 pt-6">
       <div className="text-[19px] font-bold text-text">Attendance</div>
 
       <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-2.5">
         <ChevronLeftIcon width={16} height={16} className="text-text-faint" />
-        <span className="text-[13px] font-semibold text-text">September 2026</span>
+        <span className="text-[13px] font-semibold text-text">{new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</span>
         <ChevronRightIcon width={16} height={16} className="text-text-faint" />
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-xl border border-border bg-surface p-3 text-center">
-          <div className="font-mono-num text-[17px] font-bold text-success">18</div>
-          <div className="text-[10.5px] text-text-faint">Present</div>
-        </div>
-        <div className="rounded-xl border border-border bg-surface p-3 text-center">
-          <div className="font-mono-num text-[17px] font-bold text-warning">2</div>
-          <div className="text-[10.5px] text-text-faint">Late</div>
-        </div>
-        <div className="rounded-xl border border-border bg-surface p-3 text-center">
-          <div className="font-mono-num text-[17px] font-bold text-danger">1</div>
-          <div className="text-[10.5px] text-text-faint">Absent</div>
-        </div>
-      </div>
+      {error && <ErrorState message={(error as Error).message} />}
 
-      <div className="rounded-xl border border-border bg-surface">
-        {myAttendanceMonth.map((d) => (
-          <div key={d.date} className="flex items-center justify-between border-b border-border-soft px-4 py-3 last:border-b-0">
-            <div className="flex items-center gap-3">
-              <span className={`h-2 w-2 rounded-full ${statusColor[d.status]}`} />
+      {isLoading ? (
+        <LoadingRows />
+      ) : days.length === 0 ? (
+        <EmptyState icon={<ClockIcon width={20} height={20} />} title="No attendance recorded yet" description="Your attendance records for this month will show up here." />
+      ) : (
+        <div className="rounded-xl border border-border bg-surface">
+          {days.map((d) => (
+            <div key={d.date} className="flex items-center justify-between border-b border-border-soft px-4 py-3 last:border-b-0">
               <div>
-                <div className="text-[12.5px] font-medium text-text">{d.date} · {d.weekday}</div>
-                <div className="text-[11px] text-text-faint">{statusLabel[d.status]}</div>
+                <div className="text-[12.5px] font-medium text-text">{d.date}</div>
+                <div className="text-[11px] text-text-faint">{d.status}</div>
+              </div>
+              <div className="text-right font-mono-num text-[11.5px] text-text-muted">
+                {d.checkIn ? `${d.checkIn} – ${d.checkOut ?? '—'}` : '—'}
               </div>
             </div>
-            <div className="text-right font-mono-num text-[11.5px] text-text-muted">
-              {d.checkIn ? `${d.checkIn} – ${d.checkOut}` : '—'}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

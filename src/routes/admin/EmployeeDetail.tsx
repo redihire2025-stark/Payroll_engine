@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader } from '@/shared/ui/Card';
 import { Badge } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
 import { Avatar } from '@/shared/ui/Avatar';
-import { employees } from '@/shared/lib/mockData';
+import { ErrorState, EmptyState } from '@/shared/ui/EmptyState';
+import { getEmployee } from '@/modules/employee/employeeService';
 
 const tabs = ['Profile', 'Employment', 'Salary', 'Documents', 'Attendance', 'Leave', 'History'];
+const statusTone = { active: 'success', on_leave: 'warning', exited: 'neutral' } as const;
+const statusLabel = { active: 'Active', on_leave: 'On Leave', exited: 'Exited' } as const;
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -19,8 +23,16 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 export default function EmployeeDetail() {
   const { id } = useParams();
-  const employee = employees.find((e) => e.id === id) ?? employees[0];
   const [tab, setTab] = useState('Profile');
+  const { data: employee, isLoading, error } = useQuery({
+    queryKey: ['employee', id],
+    queryFn: () => getEmployee(id!),
+    enabled: Boolean(id),
+  });
+
+  if (error) return <ErrorState message={(error as Error).message} />;
+  if (isLoading) return <div className="text-[13px] text-text-faint">Loading…</div>;
+  if (!employee) return <EmptyState title="Employee not found" description="This employee doesn't exist or you don't have access to view them." />;
 
   return (
     <div className="flex flex-col gap-5">
@@ -34,10 +46,10 @@ export default function EmployeeDetail() {
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="text-[20px] font-bold text-text">{employee.name}</h1>
-              <Badge tone="success">Active</Badge>
+              <Badge tone={statusTone[employee.status]}>{statusLabel[employee.status]}</Badge>
             </div>
             <p className="mt-0.5 text-[13px] text-text-faint">
-              {employee.code} · {employee.designation} · {employee.department}
+              {employee.code} · {employee.designation ?? 'No designation set'} · {employee.department ?? 'No department set'}
             </p>
           </div>
         </div>
@@ -65,40 +77,26 @@ export default function EmployeeDetail() {
         <Card>
           <CardHeader title="Personal Information" />
           <div className="px-5 py-3">
-            <InfoRow label="Date of Birth" value={employee.dob} />
-            <InfoRow label="Gender" value={employee.gender} />
-            <InfoRow label="Personal Email" value={employee.email} />
-            <InfoRow label="Phone" value={employee.phone} />
-            <InfoRow label="Address" value={employee.address} />
+            <InfoRow label="Date of Birth" value={employee.dob ?? '—'} />
+            <InfoRow label="Gender" value={employee.gender ?? '—'} />
+            <InfoRow label="Personal Email" value={employee.personalEmail ?? '—'} />
+            <InfoRow label="Phone" value={employee.phone ?? '—'} />
           </div>
         </Card>
 
         <Card>
-          <CardHeader title="Bank Details" />
-          <div className="px-5 py-3">
-            <InfoRow label="Account Number" value={employee.bankAccountMasked} />
-            <InfoRow label="IFSC Code" value={employee.ifsc} />
-            <InfoRow label="Bank Name" value={employee.bankName} />
+          <CardHeader title="Bank &amp; Statutory" subtitle="Encrypted at rest — not decrypted in this view" />
+          <div className="px-5 py-6 text-center text-[12.5px] text-text-faint">
+            Bank account, PAN and statutory numbers are stored encrypted and are not displayed here.
           </div>
         </Card>
 
         <Card>
-          <CardHeader title="Statutory Information" />
+          <CardHeader title="Employment" />
           <div className="px-5 py-3">
-            <InfoRow label="PAN" value={employee.panMasked} />
-            <InfoRow label="UAN" value={employee.uan} />
-            <InfoRow label="PF Number" value={employee.pfNumber} />
-            <InfoRow label="ESI Number" value={employee.esiNumber} />
-          </div>
-        </Card>
-
-        <Card>
-          <CardHeader title="Emergency Contact" />
-          <div className="px-5 py-3">
-            <InfoRow label="Contact" value={employee.emergencyContact} />
-            <InfoRow label="Branch" value={employee.branch} />
+            <InfoRow label="Branch" value={employee.branch ?? '—'} />
             <InfoRow label="Date of Joining" value={employee.doj} />
-            <InfoRow label="Reporting Manager" value="Ananya Rao" />
+            <InfoRow label="Reporting Manager" value={employee.managerId ? 'Assigned' : 'Not set'} />
           </div>
         </Card>
       </div>

@@ -1,6 +1,16 @@
 import { Card } from '@/shared/ui/Card';
-import { BarChartIcon } from '@/shared/ui/icons';
-import { reportCatalog } from '@/shared/lib/mockData';
+import { EmptyState } from '@/shared/ui/EmptyState';
+import { BarChartIcon, FileTextIcon } from '@/shared/ui/icons';
+
+const reportCatalog = [
+  { title: 'Payroll Summary', description: 'Gross, deductions and net payable by pay period.' },
+  { title: 'Attendance Report', description: 'Present/absent/LOP days by employee and department.' },
+  { title: 'Leave Report', description: 'Leave taken, balances and encashment by employee.' },
+  { title: 'Statutory Report', description: 'PF, ESI, Professional Tax and TDS filings by period.' },
+  { title: 'Department Payroll Cost', description: 'Cost distribution across departments and branches.' },
+  { title: 'Payroll Variance', description: 'Month-over-month change in gross and net payroll cost.' },
+  { title: 'Reimbursement Report', description: 'Claims submitted, approved and paid by category.' },
+];
 
 export default function Reports() {
   return (
@@ -27,21 +37,12 @@ export default function Reports() {
         <div className="border-b border-border-soft px-5 py-4">
           <h3 className="text-[14px] font-semibold text-text">Recent Exports</h3>
         </div>
-        <div className="flex flex-col">
-          {[
-            { name: 'Payroll Summary — Aug 2026.pdf', date: 'Sep 2, 2026', size: '340 KB' },
-            { name: 'Statutory Report — PF & ESI Q2 FY26.xlsx', date: 'Aug 28, 2026', size: '128 KB' },
-            { name: 'Department Payroll Cost — Aug 2026.pdf', date: 'Aug 5, 2026', size: '212 KB' },
-          ].map((f) => (
-            <div key={f.name} className="flex items-center justify-between border-b border-border-soft px-5 py-3 text-[13px] last:border-b-0">
-              <span className="font-medium text-text">{f.name}</span>
-              <div className="flex items-center gap-5 text-text-faint">
-                <span className="font-mono-num text-[12px]">{f.date}</span>
-                <span className="font-mono-num text-[12px]">{f.size}</span>
-                <span className="font-semibold text-accent">Download</span>
-              </div>
-            </div>
-          ))}
+        <div className="px-5 pb-6 pt-2">
+          <EmptyState
+            icon={<FileTextIcon width={20} height={20} />}
+            title="No reports generated yet"
+            description="Generated report exports will appear here once report generation is connected to the live data."
+          />
         </div>
       </Card>
     </div>

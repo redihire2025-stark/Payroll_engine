@@ -5,8 +5,8 @@ import { Field, Input, Select } from '@/shared/ui/Input';
 import { Button } from '@/shared/ui/Button';
 import { OrgLogo } from '@/shared/ui/OrgLogo';
 import { CheckIcon } from '@/shared/ui/icons';
-import { useSession, demoUser, type SessionUser } from '@/shared/lib/session';
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabaseClient';
+import { useSession, type SessionUser } from '@/shared/lib/session';
+import { supabase } from '@/shared/lib/supabaseClient';
 import { requestSignupOtp, verifyOtp } from '@/modules/identity/authService';
 import { sendWelcomeEmail } from '@/modules/notifications/notificationService';
 
@@ -23,6 +23,8 @@ export default function Register() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [finalCompanyLogoUrl, setFinalCompanyLogoUrl] = useState<string | null>(null);
+  const [createdUserId, setCreatedUserId] = useState<string | null>(null);
+  const [createdCompanyId, setCreatedCompanyId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { login } = useSession();
 
@@ -57,6 +59,7 @@ export default function Register() {
       const session = await verifyOtp(email, code);
       if (!session?.user) throw new Error('Verification succeeded but no session was returned.');
       const userId = session.user.id;
+      setCreatedUserId(userId);
 
       let logoStoragePath: string | undefined;
       if (logoFile) {
@@ -72,6 +75,7 @@ export default function Register() {
         body: { userId, orgName, legalName: legalName || orgName, country: 'IN', logoStoragePath },
       });
       if (fnError) throw fnError;
+      setCreatedCompanyId(data?.companyId ?? null);
 
       const companyLogoUrl = logoStoragePath
         ? supabase.storage.from('company-logos').getPublicUrl(logoStoragePath).data.publicUrl
@@ -91,12 +95,17 @@ export default function Register() {
   }
 
   function finishRegistration() {
+    if (!createdUserId || !createdCompanyId) {
+      setError('Something went wrong creating your workspace — please try signing in instead.');
+      return;
+    }
     const user: SessionUser = {
-      id: email,
+      id: createdUserId,
       name: email.split('@')[0],
       email,
       roles: ['company_owner'],
-      companyName: orgName || demoUser.companyName,
+      companyId: createdCompanyId,
+      companyName: orgName,
       companyLogoUrl: finalCompanyLogoUrl,
       employeeId: '',
       isManager: false,
@@ -233,12 +242,6 @@ export default function Register() {
         <p className="mt-8 text-center text-[12.5px] text-text-faint">
           Already have a workspace? <Link to="/auth/login" className="font-semibold text-accent">Sign in</Link>
         </p>
-
-        {!isSupabaseConfigured && (
-          <p className="mt-3 text-center text-[11px] text-text-faint">
-            No Supabase project configured in this environment — this form will call the real API once deployed with real env vars.
-          </p>
-        )}
       </div>
     </div>
   );

@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/shared/ui/Button';
 import { Field, Input } from '@/shared/ui/Input';
-import { useSession, landingRouteFor, demoUser, type SessionUser } from '@/shared/lib/session';
+import { useSession, landingRouteFor, type SessionUser } from '@/shared/lib/session';
 import { requestLoginOtp, verifyOtp, getMyCompanyRoles } from '@/modules/identity/authService';
-import { isSupabaseConfigured } from '@/shared/lib/supabaseClient';
 
 type Step = 'email' | 'code';
 
@@ -50,6 +49,7 @@ export default function Login() {
         name: email.split('@')[0],
         email,
         roles: [primary.role],
+        companyId: primary.companyId,
         companyName: primary.companyName,
         companyLogoUrl: primary.companyLogoUrl,
         employeeId: primary.employeeId ?? '',
@@ -67,11 +67,6 @@ export default function Login() {
     } finally {
       setBusy(false);
     }
-  }
-
-  function handlePreviewDemo() {
-    login(demoUser);
-    navigate(landingRouteFor(demoUser));
   }
 
   return (
@@ -178,12 +173,6 @@ export default function Login() {
           <p className="mt-2 text-center text-[11.5px] text-text-faint">
             Joining an existing company? Ask your HR admin to grant you a portal seat.
           </p>
-
-          {!isSupabaseConfigured && (
-            <button onClick={handlePreviewDemo} className="mt-4 block w-full text-center text-[11px] text-text-faint underline">
-              No Supabase project configured — preview the demo instead
-            </button>
-          )}
         </div>
       </div>
     </div>

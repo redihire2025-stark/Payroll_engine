@@ -1,7 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { SessionProvider } from '@/shared/lib/session';
+import { ProtectedRoute } from './ProtectedRoute';
 import AdminLayout from './AdminLayout';
 import EssLayout from './EssLayout';
+import Landing from '@/routes/Landing';
 import Login from '@/routes/auth/Login';
 import Register from '@/routes/auth/Register';
 import Company from '@/routes/admin/Company';
@@ -28,36 +30,41 @@ export default function App() {
   return (
     <SessionProvider>
       <Routes>
-        <Route path="/" element={<Navigate to="/admin" replace />} />
+        {/* The landing page IS the sign-in page — no dashboard is shown to a signed-out visitor. */}
+        <Route path="/" element={<Landing />} />
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
         <Route path="/print/payslip/:id/:employeeId" element={<PayslipPrint />} />
 
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="company" element={<Company />} />
-          <Route path="employees" element={<Employees />} />
-          <Route path="employees/:id" element={<EmployeeDetail />} />
-          <Route path="attendance" element={<Attendance />} />
-          <Route path="leave" element={<Leave />} />
-          <Route path="salary" element={<Salary />} />
-          <Route path="payroll" element={<PayrollRuns />} />
-          <Route path="payroll/:id" element={<PayrollRunDetail />} />
-          <Route path="payroll/:id/payslip/:employeeId" element={<Payslip />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="audit-log" element={<AuditLog />} />
+        <Route element={<ProtectedRoute requireAdmin />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="company" element={<Company />} />
+            <Route path="employees" element={<Employees />} />
+            <Route path="employees/:id" element={<EmployeeDetail />} />
+            <Route path="attendance" element={<Attendance />} />
+            <Route path="leave" element={<Leave />} />
+            <Route path="salary" element={<Salary />} />
+            <Route path="payroll" element={<PayrollRuns />} />
+            <Route path="payroll/:id" element={<PayrollRunDetail />} />
+            <Route path="payroll/:id/payslip/:employeeId" element={<Payslip />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="audit-log" element={<AuditLog />} />
+          </Route>
         </Route>
 
-        <Route path="/app" element={<EssLayout />}>
-          <Route index element={<EssHome />} />
-          <Route path="attendance" element={<EssAttendance />} />
-          <Route path="leave" element={<EssLeave />} />
-          <Route path="payslips" element={<EssPayslips />} />
-          <Route path="profile" element={<EssProfile />} />
-          <Route path="team" element={<ManagerTeam />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/app" element={<EssLayout />}>
+            <Route index element={<EssHome />} />
+            <Route path="attendance" element={<EssAttendance />} />
+            <Route path="leave" element={<EssLeave />} />
+            <Route path="payslips" element={<EssPayslips />} />
+            <Route path="profile" element={<EssProfile />} />
+            <Route path="team" element={<ManagerTeam />} />
+          </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/admin" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </SessionProvider>
   );
