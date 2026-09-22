@@ -18,6 +18,7 @@ import {
   SearchIcon,
   BellIcon,
   ChevronDownIcon,
+  HelpCircleIcon,
 } from '@/shared/ui/icons';
 
 const nav = [
@@ -30,6 +31,7 @@ const nav = [
   { to: '/admin/payroll', label: 'Payroll', icon: BanknoteIcon },
   { to: '/admin/reimbursements', label: 'Reimbursements & Loans', icon: ReceiptIcon },
   { to: '/admin/assets', label: 'Assets', icon: BoxIcon },
+  { to: '/admin/helpdesk', label: 'Helpdesk', icon: HelpCircleIcon },
   { to: '/admin/reports', label: 'Reports', icon: BarChartIcon },
   { to: '/admin/audit-log', label: 'Audit Log', icon: ShieldIcon },
   { to: '/admin/settings', label: 'Settings', icon: GearIcon },

@@ -22,6 +22,7 @@ import Reports from '@/routes/admin/Reports';
 import AuditLog from '@/routes/admin/AuditLog';
 import Reimbursements from '@/routes/admin/Reimbursements';
 import Assets from '@/routes/admin/Assets';
+import Helpdesk from '@/routes/admin/Helpdesk';
 import EssHome from '@/routes/ess/EssHome';
 import EssAttendance from '@/routes/ess/EssAttendance';
 import EssLeave from '@/routes/ess/EssLeave';
@@ -55,6 +56,7 @@ export default function App() {
             <Route path="payroll/:id/payslip/:employeeId" element={<Payslip />} />
             <Route path="reimbursements" element={<Reimbursements />} />
             <Route path="assets" element={<Assets />} />
+            <Route path="helpdesk" element={<Helpdesk />} />
             <Route path="reports" element={<Reports />} />
             <Route path="audit-log" element={<AuditLog />} />
           </Route>

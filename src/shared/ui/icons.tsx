@@ -81,3 +81,6 @@ export const MapPinIcon = (p: IconProps) => (
 export const AlertIcon = (p: IconProps) => (
   <svg {...base} {...p}><path d="M12 3l10 18H2L12 3Z" /><path d="M12 10v4.5" /><path d="M12 17.5v.1" /></svg>
 );
+export const HelpCircleIcon = (p: IconProps) => (
+  <svg {...base} {...p}><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 0 1 4.9.7c0 1.7-2.4 1.9-2.4 3.5" /><path d="M12 17v.1" /></svg>
+);
