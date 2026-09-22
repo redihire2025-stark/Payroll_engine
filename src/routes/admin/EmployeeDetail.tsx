@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader } from '@/shared/ui/Card';
 import { Badge } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
 import { Avatar } from '@/shared/ui/Avatar';
 import { ErrorState, EmptyState } from '@/shared/ui/EmptyState';
-import { getEmployee } from '@/modules/employee/employeeService';
+import { getEmployee, deactivateEmployee } from '@/modules/employee/employeeService';
+import { useSession } from '@/shared/lib/session';
+import { EditEmployeeModal } from './employees/EditEmployeeModal';
+import { PortalAccessCard } from './employees/PortalAccessCard';
 
 const tabs = ['Profile', 'Employment', 'Salary', 'Documents', 'Attendance', 'Leave', 'History'];
 const statusTone = { active: 'success', on_leave: 'warning', exited: 'neutral' } as const;
@@ -23,11 +26,23 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 export default function EmployeeDetail() {
   const { id } = useParams();
+  const { user } = useSession();
+  const companyId = user!.companyId;
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState('Profile');
+  const [editing, setEditing] = useState(false);
   const { data: employee, isLoading, error } = useQuery({
     queryKey: ['employee', id],
     queryFn: () => getEmployee(id!),
     enabled: Boolean(id),
+  });
+
+  const deactivateMutation = useMutation({
+    mutationFn: () => deactivateEmployee(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employee', id] });
+      queryClient.invalidateQueries({ queryKey: ['employees', companyId] });
+    },
   });
 
   if (error) return <ErrorState message={(error as Error).message} />;
@@ -54,8 +69,21 @@ export default function EmployeeDetail() {
           </div>
         </div>
         <div className="flex gap-2.5">
-          <Button variant="secondary" size="sm">Edit</Button>
-          <Button variant="danger" size="sm">Deactivate</Button>
+          <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>Edit</Button>
+          {employee.status !== 'exited' && (
+            <Button
+              variant="danger"
+              size="sm"
+              disabled={deactivateMutation.isPending}
+              onClick={() => {
+                if (confirm(`Deactivate ${employee.name}? Their status will be set to Exited.`)) {
+                  deactivateMutation.mutate();
+                }
+              }}
+            >
+              {deactivateMutation.isPending ? 'Deactivating…' : 'Deactivate'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -99,7 +127,11 @@ export default function EmployeeDetail() {
             <InfoRow label="Reporting Manager" value={employee.managerId ? 'Assigned' : 'Not set'} />
           </div>
         </Card>
+
+        <PortalAccessCard employee={employee} />
       </div>
+
+      {editing && <EditEmployeeModal companyId={companyId} employee={employee} onClose={() => setEditing(false)} />}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { supabase } from '@/shared/lib/supabaseClient';
 import { createOrgLookupCache, resolveBranchId, resolveDepartmentId, resolveDesignationId } from '@/modules/company/orgStructureService';
+import { callNetlifyFunction } from '@/shared/lib/netlifyFunctions';
 
 export interface EmployeeLite {
   id: string;
@@ -81,13 +82,14 @@ export interface EmployeeDetailRecord extends EmployeeListRow {
   dob: string | null;
   gender: string | null;
   managerId: string | null;
+  hasPortalAccess: boolean;
 }
 
 export async function getEmployee(employeeId: string): Promise<EmployeeDetailRecord | null> {
   const { data, error } = await supabase
     .from('employees')
     .select(
-      'id, employee_code, status, date_of_joining, manager_id, departments(name), designations(title), branches(name), employee_profiles(first_name, last_name, personal_email, phone, dob, gender)'
+      'id, employee_code, status, date_of_joining, manager_id, auth_user_id, departments(name), designations(title), branches(name), employee_profiles(first_name, last_name, personal_email, phone, dob, gender)'
     )
     .eq('id', employeeId)
     .maybeSingle();
@@ -121,6 +123,7 @@ export async function getEmployee(employeeId: string): Promise<EmployeeDetailRec
     phone: profile?.phone ?? null,
     dob: profile?.dob ?? null,
     gender: profile?.gender ?? null,
+    hasPortalAccess: Boolean(data.auth_user_id),
   };
 }
 
@@ -177,6 +180,79 @@ export async function createEmployee(input: CreateEmployeeInput, cache: OrgLooku
   if (profileErr) throw profileErr;
 
   return employee.id as string;
+}
+
+export interface UpdateEmployeeInput {
+  employeeId: string;
+  companyId: string;
+  firstName: string;
+  lastName?: string;
+  personalEmail?: string;
+  phone?: string;
+  dob?: string;
+  gender?: string;
+  dateOfJoining: string;
+  dateOfExit?: string;
+  status: 'active' | 'on_leave' | 'exited';
+  employmentType?: string;
+  managerId?: string;
+  departmentName?: string;
+  designationTitle?: string;
+  branchName?: string;
+}
+
+/** Full-replace update: the edit form is always pre-filled from getEmployee(), so every field is sent explicitly rather than merged. */
+export async function updateEmployee(input: UpdateEmployeeInput): Promise<void> {
+  const cache = createOrgLookupCache();
+  const [departmentId, designationId, branchId] = await Promise.all([
+    resolveDepartmentId(input.companyId, input.departmentName, cache),
+    resolveDesignationId(input.companyId, input.designationTitle, cache),
+    resolveBranchId(input.companyId, input.branchName, cache),
+  ]);
+
+  const { error: employeeErr } = await supabase
+    .from('employees')
+    .update({
+      department_id: departmentId,
+      designation_id: designationId,
+      branch_id: branchId,
+      manager_id: input.managerId || null,
+      date_of_joining: input.dateOfJoining,
+      date_of_exit: input.dateOfExit || null,
+      status: input.status,
+      employment_type: input.employmentType || 'full_time',
+    })
+    .eq('id', input.employeeId);
+  if (employeeErr) throw employeeErr;
+
+  const { error: profileErr } = await supabase
+    .from('employee_profiles')
+    .update({
+      first_name: input.firstName,
+      last_name: input.lastName || null,
+      personal_email: input.personalEmail || null,
+      phone: input.phone || null,
+      dob: input.dob || null,
+      gender: input.gender || null,
+    })
+    .eq('employee_id', input.employeeId);
+  if (profileErr) throw profileErr;
+}
+
+export async function grantPortalAccess(employeeId: string, email: string, requestedByUserId: string, role = 'employee'): Promise<void> {
+  await callNetlifyFunction('portal-access', { action: 'grant', employeeId, email, role, requestedByUserId });
+}
+
+export async function revokePortalAccess(employeeId: string, requestedByUserId: string): Promise<void> {
+  await callNetlifyFunction('portal-access', { action: 'revoke', employeeId, requestedByUserId });
+}
+
+export async function deactivateEmployee(employeeId: string): Promise<void> {
+  const { error } = await supabase
+    .from('employees')
+    .update({ status: 'exited', date_of_exit: new Date().toISOString().slice(0, 10) })
+    .eq('id', employeeId);
+  if (error) throw error;
 }
 
 export interface BulkCreateResult {
