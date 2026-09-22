@@ -84,3 +84,6 @@ export const AlertIcon = (p: IconProps) => (
 export const HelpCircleIcon = (p: IconProps) => (
   <svg {...base} {...p}><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 0 1 4.9.7c0 1.7-2.4 1.9-2.4 3.5" /><path d="M12 17v.1" /></svg>
 );
+export const TargetIcon = (p: IconProps) => (
+  <svg {...base} {...p}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></svg>
+);

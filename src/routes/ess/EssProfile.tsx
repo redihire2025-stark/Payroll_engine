@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Avatar } from '@/shared/ui/Avatar';
-import { ChevronRightIcon, FileTextIcon, ShieldIcon, BellIcon, LogOutIcon, AlertIcon, BoxIcon, HelpCircleIcon } from '@/shared/ui/icons';
+import { ChevronRightIcon, FileTextIcon, ShieldIcon, BellIcon, LogOutIcon, AlertIcon, BoxIcon, HelpCircleIcon, TargetIcon } from '@/shared/ui/icons';
 import { ErrorState } from '@/shared/ui/EmptyState';
 import { useSession } from '@/shared/lib/session';
 import { getEmployee } from '@/modules/employee/employeeService';
@@ -9,6 +9,7 @@ import { DocumentsPanel } from '@/modules/document/DocumentsPanel';
 import { ResignationPanel } from './ResignationPanel';
 import { MyAssetsPanel } from './MyAssetsPanel';
 import { HelpdeskPanel } from './HelpdeskPanel';
+import { PerformancePanel } from './PerformancePanel';
 
 function Section({ title, rows }: { title: string; rows: { label: string; value: string }[] }) {
   return (
@@ -26,7 +27,7 @@ function Section({ title, rows }: { title: string; rows: { label: string; value:
 
 export default function EssProfile() {
   const { user, logout } = useSession();
-  const [panel, setPanel] = useState<'documents' | 'resignation' | 'assets' | 'helpdesk' | null>(null);
+  const [panel, setPanel] = useState<'documents' | 'resignation' | 'assets' | 'helpdesk' | 'performance' | null>(null);
   const { data: employee, error } = useQuery({
     queryKey: ['employee', user?.employeeId],
     queryFn: () => getEmployee(user!.employeeId),
@@ -73,6 +74,16 @@ export default function EssProfile() {
     );
   }
 
+  if (panel === 'performance') {
+    return (
+      <div className="flex flex-col gap-4 px-5 pt-6">
+        <button onClick={() => setPanel(null)} className="self-start text-[12.5px] font-semibold text-accent">← Back to Profile</button>
+        <div className="text-[19px] font-bold text-text">Performance</div>
+        <PerformancePanel />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 px-5 pt-6">
       <div className="flex items-center gap-3.5">
@@ -104,6 +115,7 @@ export default function EssProfile() {
           { icon: AlertIcon, label: 'Resignation', onClick: () => setPanel('resignation') },
           { icon: BoxIcon, label: 'My Assets', onClick: () => setPanel('assets') },
           { icon: HelpCircleIcon, label: 'Helpdesk', onClick: () => setPanel('helpdesk') },
+          { icon: TargetIcon, label: 'Performance', onClick: () => setPanel('performance') },
         ].map(({ icon: Icon, label, onClick }) => (
           <button
             key={label}
