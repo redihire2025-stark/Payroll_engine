@@ -5,28 +5,103 @@ import { Field, Input, Select } from '@/shared/ui/Input';
 import { Button } from '@/shared/ui/Button';
 import { OrgLogo } from '@/shared/ui/OrgLogo';
 import { CheckIcon } from '@/shared/ui/icons';
-import { useSession, demoUser } from '@/shared/lib/session';
+import { useSession, demoUser, type SessionUser } from '@/shared/lib/session';
+import { supabase, isSupabaseConfigured } from '@/shared/lib/supabaseClient';
+import { requestSignupOtp, verifyOtp } from '@/modules/identity/authService';
+import { sendWelcomeEmail } from '@/modules/notifications/notificationService';
 
-const STEPS = ['Organization', 'Admin Account', 'Done'];
+const STEPS = ['Organization', 'Admin Account', 'Verify', 'Done'];
 
 export default function Register() {
   const [step, setStep] = useState(0);
   const [orgName, setOrgName] = useState('');
+  const [legalName, setLegalName] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [adminName, setAdminName] = useState('');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [finalCompanyLogoUrl, setFinalCompanyLogoUrl] = useState<string | null>(null);
   const navigate = useNavigate();
   const { login } = useSession();
 
   function handleLogoChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setLogoFile(file);
     const reader = new FileReader();
     reader.onload = () => setLogoPreview(reader.result as string);
     reader.readAsDataURL(file);
   }
 
+  async function handleSendCode(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      await requestSignupOtp(email);
+      setStep(2);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send the code.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleVerifyAndCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const session = await verifyOtp(email, code);
+      if (!session?.user) throw new Error('Verification succeeded but no session was returned.');
+      const userId = session.user.id;
+
+      let logoStoragePath: string | undefined;
+      if (logoFile) {
+        const ext = logoFile.name.split('.').pop() || 'png';
+        logoStoragePath = `${userId}/logo-${Date.now()}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from('company-logos').upload(logoStoragePath, logoFile, {
+          upsert: true,
+        });
+        if (uploadErr) throw new Error(`Logo upload failed: ${uploadErr.message}`);
+      }
+
+      const { data, error: fnError } = await supabase.functions.invoke('register-company', {
+        body: { userId, orgName, legalName: legalName || orgName, country: 'IN', logoStoragePath },
+      });
+      if (fnError) throw fnError;
+
+      const companyLogoUrl = logoStoragePath
+        ? supabase.storage.from('company-logos').getPublicUrl(logoStoragePath).data.publicUrl
+        : null;
+      setFinalCompanyLogoUrl(companyLogoUrl);
+
+      // Best-effort — a failed welcome email should never block onboarding.
+      sendWelcomeEmail(email, data?.companyName ?? orgName).catch(() => {});
+
+      setStep(3);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not verify that code.';
+      setError(message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function finishRegistration() {
-    login({ ...demoUser, name: adminName || demoUser.name, companyName: orgName || demoUser.companyName, companyLogoUrl: logoPreview, roles: ['company_owner'] });
+    const user: SessionUser = {
+      id: email,
+      name: email.split('@')[0],
+      email,
+      roles: ['company_owner'],
+      companyName: orgName || demoUser.companyName,
+      companyLogoUrl: finalCompanyLogoUrl,
+      employeeId: '',
+      isManager: false,
+    };
+    login(user);
     navigate('/admin');
   }
 
@@ -58,7 +133,7 @@ export default function Register() {
               <Input placeholder="e.g. Meridian Textiles Pvt Ltd" value={orgName} onChange={(e) => setOrgName(e.target.value)} />
             </Field>
             <Field label="Legal name">
-              <Input placeholder="As registered with statutory authorities" defaultValue={orgName} />
+              <Input placeholder="As registered with statutory authorities" value={legalName} onChange={(e) => setLegalName(e.target.value)} />
             </Field>
             <Field label="Country">
               <Select defaultValue="IN">
@@ -86,32 +161,49 @@ export default function Register() {
         )}
 
         {step === 1 && (
-          <div className="mt-9 flex flex-col gap-5">
+          <form className="mt-9 flex flex-col gap-5" onSubmit={handleSendCode}>
             <div>
               <h1 className="text-[19px] font-bold text-text">Create your admin account</h1>
               <p className="mt-1 text-[13px] text-text-muted">
                 You'll be the Company Owner — able to invite HR, Payroll and Finance roles, and grant employee portal access.
+                No password — we'll email you a one-time code.
               </p>
             </div>
-            <Field label="Your full name">
-              <Input placeholder="e.g. Ananya Rao" value={adminName} onChange={(e) => setAdminName(e.target.value)} />
-            </Field>
             <Field label="Work email">
-              <Input type="email" placeholder="you@company.com" />
+              <Input type="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </Field>
-            <Field label="Password">
-              <Input type="password" placeholder="At least 10 characters" />
-            </Field>
+            {error && <p className="text-[12.5px] text-danger">{error}</p>}
             <div className="mt-2 flex gap-3">
-              <Button variant="secondary" className="flex-1 justify-center" onClick={() => setStep(0)}>Back</Button>
-              <Button variant="primary" className="flex-1 justify-center" onClick={() => setStep(2)} disabled={!adminName}>
-                Create Workspace
+              <Button type="button" variant="secondary" className="flex-1 justify-center" onClick={() => setStep(0)}>Back</Button>
+              <Button type="submit" variant="primary" className="flex-1 justify-center" disabled={busy || !email}>
+                {busy ? 'Sending code…' : 'Send Code'}
               </Button>
             </div>
-          </div>
+          </form>
         )}
 
         {step === 2 && (
+          <form className="mt-9 flex flex-col gap-5" onSubmit={handleVerifyAndCreate}>
+            <div>
+              <h1 className="text-[19px] font-bold text-text">Enter your code</h1>
+              <p className="mt-1 text-[13px] text-text-muted">
+                We sent a 6-digit code to <span className="font-semibold text-text">{email}</span>.
+              </p>
+            </div>
+            <Field label="One-time code">
+              <Input inputMode="numeric" maxLength={6} placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} required />
+            </Field>
+            {error && <p className="text-[12.5px] text-danger">{error}</p>}
+            <div className="mt-2 flex gap-3">
+              <Button type="button" variant="secondary" className="flex-1 justify-center" onClick={() => setStep(1)}>Back</Button>
+              <Button type="submit" variant="primary" className="flex-1 justify-center" disabled={busy || code.length < 6}>
+                {busy ? 'Creating workspace…' : 'Verify & Create Workspace'}
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {step === 3 && (
           <div className="mt-9 flex flex-col items-center gap-5 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-success-soft text-success">
               <CheckIcon width={26} height={26} />
@@ -125,7 +217,7 @@ export default function Register() {
             </div>
             <div className="w-full rounded-lg bg-bg p-4 text-left text-[12.5px] text-text-muted">
               <div className="flex items-center gap-3">
-                <OrgLogo name={orgName || 'Your Organization'} url={logoPreview} size={36} />
+                <OrgLogo name={orgName || 'Your Organization'} url={finalCompanyLogoUrl ?? logoPreview} size={36} />
                 <div>
                   <div className="font-semibold text-text">{orgName || 'Your Organization'}</div>
                   <div>0 / 200 employee seats used on the Starter plan</div>
@@ -141,6 +233,12 @@ export default function Register() {
         <p className="mt-8 text-center text-[12.5px] text-text-faint">
           Already have a workspace? <Link to="/auth/login" className="font-semibold text-accent">Sign in</Link>
         </p>
+
+        {!isSupabaseConfigured && (
+          <p className="mt-3 text-center text-[11px] text-text-faint">
+            No Supabase project configured in this environment — this form will call the real API once deployed with real env vars.
+          </p>
+        )}
       </div>
     </div>
   );

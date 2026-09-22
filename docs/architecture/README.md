@@ -26,6 +26,7 @@ and this documentation is updated alongside the code.
 | 14 | [14-risk-register.md](./14-risk-register.md) | Risk register |
 | 15 | [15-implementation-order.md](./15-implementation-order.md) | Recommended implementation order |
 | 16 | [16-self-service-onboarding.md](./16-self-service-onboarding.md) | Self-service company registration, tenant branding, seat-based licensing |
+| 17 | [17-supabase-resend-setup.md](./17-supabase-resend-setup.md) | Backend confirmed as Supabase (not Neon); email OTP login + Resend setup |
 
 ## Product Vision (Summary)
 
