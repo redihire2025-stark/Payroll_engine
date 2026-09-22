@@ -9,6 +9,7 @@ import { CalendarIcon } from '@/shared/ui/icons';
 import { useSession } from '@/shared/lib/session';
 import { listLeaveRequests, updateLeaveRequestStatus } from '@/modules/leave/leaveService';
 import { LeaveTypesPanel } from './LeaveTypesPanel';
+import { LeavePoliciesPanel } from './LeavePoliciesPanel';
 import { HolidaysPanel } from './HolidaysPanel';
 
 const tabs = ['Pending', 'Approved', 'Rejected', 'All'] as const;
@@ -111,6 +112,7 @@ export default function Leave() {
 
         <div className="flex flex-col gap-5">
           <LeaveTypesPanel companyId={companyId} />
+          <LeavePoliciesPanel companyId={companyId} />
           <HolidaysPanel companyId={companyId} />
         </div>
       </div>
