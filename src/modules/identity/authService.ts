@@ -36,6 +36,24 @@ export async function signOut(): Promise<void> {
   await supabase.auth.signOut();
 }
 
+/** Real Supabase Auth password login — no Netlify Function needed, GoTrue hashes/verifies server-side already. */
+export async function signInWithPassword(email: string, password: string) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data.session;
+}
+
+/** True if this account was created with a throwaway password and still needs the user to set a real one. */
+export async function checkMustChangePassword(userId: string): Promise<boolean> {
+  const { data, error } = await supabase.from('platform_users').select('must_change_password').eq('id', userId).maybeSingle();
+  if (error) throw error;
+  return data?.must_change_password ?? false;
+}
+
+export async function setPassword(userId: string, newPassword: string): Promise<void> {
+  await callNetlifyFunction('set-password', { userId, newPassword });
+}
+
 export interface ResolvedCompanyRole {
   companyId: string;
   companyName: string;
