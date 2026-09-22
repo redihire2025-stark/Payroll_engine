@@ -58,6 +58,21 @@ supabase functions deploy verify-otp
 supabase functions deploy send-notification
 ```
 
+`supabase/config.toml` (in this repo) sets `verify_jwt = false` for
+`send-otp` and `verify-otp` specifically — they're called before a session
+exists (a visitor requesting a login code has no JWT yet), and Supabase's
+platform-level JWT check runs before your code, rejecting even the
+browser's automatic CORS preflight request otherwise. This is picked up
+automatically as long as you deploy from inside this repo, where that file
+lives — no flag needed. If you deployed before pulling this file (or ever
+see `"preflight ... does not have HTTP ok status"` again), redeploy those
+two explicitly to force it:
+
+```bash
+supabase functions deploy send-otp --no-verify-jwt
+supabase functions deploy verify-otp --no-verify-jwt
+```
+
 ## 5. Set frontend environment variables
 
 Wherever the frontend builds (Netlify, or local `.env.local`):

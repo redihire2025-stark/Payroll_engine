@@ -1,0 +1,21 @@
+project_id = "opnomzejmppuxjrnspox"
+
+# send-otp and verify-otp are called BEFORE a session exists — a visitor
+# requesting a login/signup code has no JWT yet, and the browser's
+# automatic CORS preflight (OPTIONS) request never carries one either. With
+# JWT verification on (the platform default for every function), Supabase's
+# gateway rejects that preflight before it ever reaches this repo's CORS
+# handling code, which is exactly the
+# "preflight ... does not have HTTP ok status" error. Both functions do
+# their own authorization internally (checking platform_users, verifying
+# the OTP hash) rather than relying on the caller's JWT, so disabling
+# platform-level verification here is correct, not a security gap.
+[functions.send-otp]
+verify_jwt = false
+
+[functions.verify-otp]
+verify_jwt = false
+
+# register-company and send-notification ARE called with a real session
+# (right after verify-otp succeeds, or from an authenticated admin action),
+# so they keep the default JWT verification — no override needed.
