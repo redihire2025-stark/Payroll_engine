@@ -1,0 +1,50 @@
+name: Run DB Migrations
+
+# Manual, one-off tool for applying supabase/migrations/*.sql directly to the
+# live Postgres database, for cases where `supabase link`/`supabase db push`
+# is blocked (e.g. a Management API privilege error) and the SQL Editor's
+# paste-as-one-transaction behavior silently rolls back partial failures.
+# Runs scripts/run-migration.mjs statement-by-statement (autocommit) against
+# each file in order, stopping at the first failing statement.
+on:
+  workflow_dispatch:
+    inputs:
+      migration:
+        description: "Migration filename (e.g. 0002_attendance_leave_salary.sql), or 'all' to run 0001-0006 in order"
+        required: true
+        default: "all"
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run migration(s)
+        env:
+          PGHOST: db.opnomzejmppuxjrnspox.supabase.co
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -e
+          if [ "${{ inputs.migration }}" = "all" ]; then
+            for f in 0001_core_schema.sql 0002_attendance_leave_salary.sql 0003_payroll.sql 0004_rls.sql 0005_org_branding_and_seats.sql 0006_company_letterhead.sql; do
+              echo "=== Running $f ==="
+              node scripts/run-migration.mjs "supabase/migrations/$f"
+            done
+          else
+            node scripts/run-migration.mjs "supabase/migrations/${{ inputs.migration }}"
+          fi
+
+      - name: List current tables (always, for diagnostics)
+        if: always()
+        env:
+          PGHOST: db.opnomzejmppuxjrnspox.supabase.co
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: node scripts/list-tables.mjs
