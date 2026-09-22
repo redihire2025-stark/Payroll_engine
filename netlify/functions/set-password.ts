@@ -8,11 +8,11 @@
 
 import type { Handler } from '@netlify/functions';
 import { getSupabaseAdmin } from './_shared/supabaseAdmin';
+import { requireAuthenticatedUser } from './_shared/auth';
 import { json } from './_shared/http';
 import { errorMessage } from './_shared/errors';
 
 interface SetPasswordRequest {
-  userId?: string;
   newPassword?: string;
 }
 
@@ -23,8 +23,12 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   try {
-    const { userId, newPassword } = JSON.parse(event.body || '{}') as SetPasswordRequest;
-    if (!userId || !newPassword) return json({ error: 'userId and newPassword are required' });
+    // Self-service only — a user can set their own password, never
+    // someone else's, so the account to change is the verified caller,
+    // never a client-supplied id.
+    const userId = await requireAuthenticatedUser(event);
+    const { newPassword } = JSON.parse(event.body || '{}') as SetPasswordRequest;
+    if (!newPassword) return json({ error: 'newPassword is required' });
     if (newPassword.length < MIN_PASSWORD_LENGTH) {
       return json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` });
     }

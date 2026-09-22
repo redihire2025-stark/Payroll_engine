@@ -11,6 +11,7 @@
 import type { Handler } from '@netlify/functions';
 import { randomUUID } from 'node:crypto';
 import { getSupabaseAdmin } from './_shared/supabaseAdmin';
+import { requireAuthenticatedUser } from './_shared/auth';
 import { sendEmail } from './_shared/resend';
 import { json } from './_shared/http';
 import { errorMessage } from './_shared/errors';
@@ -19,7 +20,6 @@ const ADMIN_LIKE_ROLES = ['company_owner', 'company_admin', 'hr_admin'];
 
 interface PortalAccessRequest {
   action?: 'grant' | 'revoke';
-  requestedByUserId?: string;
   employeeId?: string;
   email?: string;
   role?: string;
@@ -41,9 +41,10 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   try {
+    const requestedByUserId = await requireAuthenticatedUser(event);
     const body = JSON.parse(event.body || '{}') as PortalAccessRequest;
-    if (!body.action || !body.requestedByUserId || !body.employeeId) {
-      return json({ error: 'action, requestedByUserId and employeeId are required' });
+    if (!body.action || !body.employeeId) {
+      return json({ error: 'action and employeeId are required' });
     }
 
     const admin = getSupabaseAdmin();
@@ -55,7 +56,7 @@ export const handler: Handler = async (event) => {
       .single();
     if (empErr || !employee) throw new Error(empErr?.message ?? 'Employee not found');
 
-    await assertRequesterIsAdmin(admin, body.requestedByUserId, employee.company_id);
+    await assertRequesterIsAdmin(admin, requestedByUserId, employee.company_id);
 
     if (body.action === 'revoke') {
       if (!employee.auth_user_id) return json({ error: 'This employee does not have portal access.' });

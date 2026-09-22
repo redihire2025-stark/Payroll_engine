@@ -34,7 +34,7 @@ export default function Payslip() {
     if (!payslipIdQuery.data) return;
     setDownloading(true);
     try {
-      const url = await getSignedPayslipUrl(payslipIdQuery.data, user!.id);
+      const url = await getSignedPayslipUrl(payslipIdQuery.data);
       window.open(url, '_blank');
     } finally {
       setDownloading(false);

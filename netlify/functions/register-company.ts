@@ -3,17 +3,18 @@
 // default settings + granting the registrant company_owner is a
 // multi-table sequence that must either all succeed or all fail.
 // Called from src/routes/auth/Register.tsx after the registrant has
-// already verified their email OTP (so userId is a real, authenticated
-// auth.users id — this function trusts it because Supabase's own auth
-// layer, not this function, established that identity).
+// already verified their email OTP. The owner is the verified caller
+// (requireAuthenticatedUser), never a client-supplied userId — otherwise
+// anyone could pass a victim's uuid and make that Netlify Function grant
+// company_owner over a new company to someone else's account.
 
 import type { Handler } from '@netlify/functions';
 import { getSupabaseAdmin } from './_shared/supabaseAdmin';
+import { requireAuthenticatedUser } from './_shared/auth';
 import { json } from './_shared/http';
 import { errorMessage } from './_shared/errors';
 
 interface RegisterCompanyRequest {
-  userId?: string;
   orgName?: string;
   legalName?: string;
   country?: string;
@@ -32,19 +33,20 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   try {
+    const userId = await requireAuthenticatedUser(event);
     const body = JSON.parse(event.body || '{}') as RegisterCompanyRequest;
-    if (!body.userId || !body.orgName) {
-      return json({ error: 'userId and orgName are required' });
+    if (!body.orgName) {
+      return json({ error: 'orgName is required' });
     }
 
     const admin = getSupabaseAdmin();
 
-    const { data: authUser, error: authErr } = await admin.auth.admin.getUserById(body.userId);
+    const { data: authUser, error: authErr } = await admin.auth.admin.getUserById(userId);
     if (authErr || !authUser?.user) throw new Error(authErr?.message ?? 'Authenticated user not found');
 
     const { error: platformUserErr } = await admin
       .from('platform_users')
-      .upsert({ id: body.userId, email: authUser.user.email, full_name: body.orgName + ' Owner' }, { onConflict: 'id' });
+      .upsert({ id: userId, email: authUser.user.email, full_name: body.orgName + ' Owner' }, { onConflict: 'id' });
     if (platformUserErr) throw platformUserErr;
 
     const { data: company, error: companyErr } = await admin
@@ -64,7 +66,7 @@ export const handler: Handler = async (event) => {
 
     const { error: roleErr } = await admin
       .from('user_company_roles')
-      .insert({ user_id: body.userId, company_id: company.id, role: 'company_owner' });
+      .insert({ user_id: userId, company_id: company.id, role: 'company_owner' });
     if (roleErr) throw roleErr;
 
     return json({ companyId: company.id, companyName: company.name });

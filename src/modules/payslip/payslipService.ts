@@ -95,7 +95,8 @@ export async function getPayslipIdForItem(payrollItemId: string): Promise<string
   return (data?.id as string) ?? null;
 }
 
-export async function getSignedPayslipUrl(payslipId: string, requestedByUserId: string): Promise<string> {
-  const { url } = await callNetlifyFunction<{ url: string }>('get-payslip-url', { payslipId, requestedByUserId });
+/** Authorization is derived server-side from the caller's own session, never a client-supplied id (see get-payslip-url.ts). */
+export async function getSignedPayslipUrl(payslipId: string): Promise<string> {
+  const { url } = await callNetlifyFunction<{ url: string }>('get-payslip-url', { payslipId });
   return url;
 }

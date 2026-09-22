@@ -21,7 +21,7 @@ export default function EssPayslips() {
   async function handleDownload(payslipId: string, runId: string) {
     setDownloadingRunId(runId);
     try {
-      const url = await getSignedPayslipUrl(payslipId, user!.id);
+      const url = await getSignedPayslipUrl(payslipId);
       window.open(url, '_blank');
     } catch {
       // fall through — the print route below stays available regardless

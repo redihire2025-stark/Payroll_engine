@@ -67,7 +67,6 @@ export default function Register() {
       // upload below, whose storage policy checks the uploader's role on the
       // company_id folder segment.
       const data = await callNetlifyFunction<{ companyId: string; companyName: string }>('register-company', {
-        userId,
         orgName,
         legalName: legalName || orgName,
         country: 'IN',

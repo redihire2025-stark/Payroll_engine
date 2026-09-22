@@ -239,12 +239,13 @@ export async function updateEmployee(input: UpdateEmployeeInput): Promise<void> 
   if (profileErr) throw profileErr;
 }
 
-export async function grantPortalAccess(employeeId: string, email: string, requestedByUserId: string, role = 'employee'): Promise<void> {
-  await callNetlifyFunction('portal-access', { action: 'grant', employeeId, email, role, requestedByUserId });
+/** Authorization is derived server-side from the caller's own session, never a client-supplied id (see portal-access.ts). */
+export async function grantPortalAccess(employeeId: string, email: string, role = 'employee'): Promise<void> {
+  await callNetlifyFunction('portal-access', { action: 'grant', employeeId, email, role });
 }
 
-export async function revokePortalAccess(employeeId: string, requestedByUserId: string): Promise<void> {
-  await callNetlifyFunction('portal-access', { action: 'revoke', employeeId, requestedByUserId });
+export async function revokePortalAccess(employeeId: string): Promise<void> {
+  await callNetlifyFunction('portal-access', { action: 'revoke', employeeId });
 }
 
 export async function deactivateEmployee(employeeId: string): Promise<void> {

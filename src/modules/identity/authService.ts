@@ -50,8 +50,9 @@ export async function checkMustChangePassword(userId: string): Promise<boolean> 
   return data?.must_change_password ?? false;
 }
 
-export async function setPassword(userId: string, newPassword: string): Promise<void> {
-  await callNetlifyFunction('set-password', { userId, newPassword });
+/** Self-service only — the account changed is always the caller's own verified session (see set-password.ts). */
+export async function setPassword(newPassword: string): Promise<void> {
+  await callNetlifyFunction('set-password', { newPassword });
 }
 
 export interface ResolvedCompanyRole {

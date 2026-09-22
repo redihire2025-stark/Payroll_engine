@@ -7,6 +7,7 @@
 
 import type { Handler } from '@netlify/functions';
 import { getSupabaseAdmin } from './_shared/supabaseAdmin';
+import { requireAuthenticatedUser } from './_shared/auth';
 import { json } from './_shared/http';
 import { errorMessage } from './_shared/errors';
 
@@ -14,7 +15,6 @@ const ADMIN_LIKE_ROLES = ['company_owner', 'company_admin', 'hr_admin'];
 
 interface GetPayslipUrlRequest {
   payslipId?: string;
-  requestedByUserId?: string;
 }
 
 export const handler: Handler = async (event) => {
@@ -22,8 +22,9 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   try {
-    const { payslipId, requestedByUserId } = JSON.parse(event.body || '{}') as GetPayslipUrlRequest;
-    if (!payslipId || !requestedByUserId) return json({ error: 'payslipId and requestedByUserId are required' });
+    const requestedByUserId = await requireAuthenticatedUser(event);
+    const { payslipId } = JSON.parse(event.body || '{}') as GetPayslipUrlRequest;
+    if (!payslipId) return json({ error: 'payslipId is required' });
 
     const admin = getSupabaseAdmin();
 

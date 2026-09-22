@@ -4,19 +4,17 @@ import { Card, CardHeader } from '@/shared/ui/Card';
 import { Badge } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
 import { Field, Input } from '@/shared/ui/Input';
-import { useSession } from '@/shared/lib/session';
 import { grantPortalAccess, revokePortalAccess } from '@/modules/employee/employeeService';
 import type { EmployeeDetailRecord } from '@/modules/employee/employeeService';
 
 export function PortalAccessCard({ employee }: { employee: EmployeeDetailRecord }) {
-  const { user } = useSession();
   const queryClient = useQueryClient();
   const [granting, setGranting] = useState(false);
   const [email, setEmail] = useState(employee.personalEmail ?? '');
   const [error, setError] = useState<string | null>(null);
 
   const grantMutation = useMutation({
-    mutationFn: () => grantPortalAccess(employee.id, email.trim(), user!.id),
+    mutationFn: () => grantPortalAccess(employee.id, email.trim()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employee', employee.id] });
       setGranting(false);
@@ -25,7 +23,7 @@ export function PortalAccessCard({ employee }: { employee: EmployeeDetailRecord 
   });
 
   const revokeMutation = useMutation({
-    mutationFn: () => revokePortalAccess(employee.id, user!.id),
+    mutationFn: () => revokePortalAccess(employee.id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['employee', employee.id] }),
   });
 

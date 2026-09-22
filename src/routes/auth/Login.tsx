@@ -110,7 +110,7 @@ export default function Login() {
     if (newPassword !== confirmPassword) return setError('Passwords do not match.');
     setBusy(true);
     try {
-      await setPassword(pendingUser!.id, newPassword);
+      await setPassword(newPassword);
       login(pendingUser!);
       navigate(landingRouteFor(pendingUser!));
     } catch (err) {
