@@ -20,10 +20,12 @@ import PayrollRunDetail from '@/routes/admin/PayrollRunDetail';
 import Payslip from '@/routes/admin/Payslip';
 import Reports from '@/routes/admin/Reports';
 import AuditLog from '@/routes/admin/AuditLog';
+import Reimbursements from '@/routes/admin/Reimbursements';
 import EssHome from '@/routes/ess/EssHome';
 import EssAttendance from '@/routes/ess/EssAttendance';
 import EssLeave from '@/routes/ess/EssLeave';
 import EssPayslips from '@/routes/ess/EssPayslips';
+import EssExpenses from '@/routes/ess/EssExpenses';
 import EssProfile from '@/routes/ess/EssProfile';
 import ManagerTeam from '@/routes/ess/ManagerTeam';
 
@@ -50,6 +52,7 @@ export default function App() {
             <Route path="payroll" element={<PayrollRuns />} />
             <Route path="payroll/:id" element={<PayrollRunDetail />} />
             <Route path="payroll/:id/payslip/:employeeId" element={<Payslip />} />
+            <Route path="reimbursements" element={<Reimbursements />} />
             <Route path="reports" element={<Reports />} />
             <Route path="audit-log" element={<AuditLog />} />
           </Route>
@@ -61,6 +64,7 @@ export default function App() {
             <Route path="attendance" element={<EssAttendance />} />
             <Route path="leave" element={<EssLeave />} />
             <Route path="payslips" element={<EssPayslips />} />
+            <Route path="expenses" element={<EssExpenses />} />
             <Route path="profile" element={<EssProfile />} />
             <Route path="team" element={<ManagerTeam />} />
           </Route>

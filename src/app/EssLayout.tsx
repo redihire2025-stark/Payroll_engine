@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useSession } from '@/shared/lib/session';
-import { HomeIcon, ClockIcon, CalendarIcon, FileTextIcon, UsersIcon } from '@/shared/ui/icons';
+import { HomeIcon, ClockIcon, CalendarIcon, FileTextIcon, ReceiptIcon } from '@/shared/ui/icons';
 import { Avatar } from '@/shared/ui/Avatar';
 
 const tabs = [
@@ -8,6 +8,7 @@ const tabs = [
   { to: '/app/attendance', label: 'Attendance', icon: ClockIcon },
   { to: '/app/leave', label: 'Leave', icon: CalendarIcon },
   { to: '/app/payslips', label: 'Payslips', icon: FileTextIcon },
+  { to: '/app/expenses', label: 'Expenses', icon: ReceiptIcon },
 ];
 
 export default function EssLayout() {
