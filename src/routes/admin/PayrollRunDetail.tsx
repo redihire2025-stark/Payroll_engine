@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader } from '@/shared/ui/Card';
 import { StatTile } from '@/shared/ui/StatTile';
 import { Stepper } from '@/shared/ui/Stepper';
@@ -9,6 +9,8 @@ import { Avatar } from '@/shared/ui/Avatar';
 import { EmptyState, ErrorState, LoadingRows } from '@/shared/ui/EmptyState';
 import { formatINR } from '@/shared/lib/format';
 import { getPayrollRun, listPayrollItems } from '@/modules/payroll/payrollService';
+import { advancePayrollRun, sendBackToDraft } from '@/modules/payroll/runPayroll';
+import { useSession } from '@/shared/lib/session';
 
 const STEPS = ['Draft', 'Calculating', 'Calculated', 'Under Review', 'Approved', 'Locked', 'Paid'];
 const STATUS_INDEX: Record<string, number> = { draft: 0, calculating: 1, calculated: 2, under_review: 3, approved: 4, locked: 5, paid: 6, cancelled: 0 };
@@ -16,8 +18,19 @@ const cols = '1.8fr 1fr 1fr 0.6fr';
 
 export default function PayrollRunDetail() {
   const { id } = useParams();
+  const { user } = useSession();
+  const queryClient = useQueryClient();
   const runQuery = useQuery({ queryKey: ['payroll-run', id], queryFn: () => getPayrollRun(id!), enabled: Boolean(id) });
   const itemsQuery = useQuery({ queryKey: ['payroll-items', id], queryFn: () => listPayrollItems(id!), enabled: Boolean(id) });
+
+  const advanceMutation = useMutation({
+    mutationFn: () => advancePayrollRun(id!, run!.status, user!.id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['payroll-run', id] }),
+  });
+  const sendBackMutation = useMutation({
+    mutationFn: () => sendBackToDraft(id!),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['payroll-run', id] }),
+  });
 
   const run = runQuery.data;
   const items = itemsQuery.data ?? [];
@@ -39,8 +52,24 @@ export default function PayrollRunDetail() {
         <div className="flex items-center justify-between px-6 py-5">
           <Stepper steps={STEPS} currentIndex={STATUS_INDEX[run.status] ?? 0} />
           <div className="flex gap-2.5">
-            <Button variant="secondary" size="sm">Send Back</Button>
-            <Button variant="primary" size="sm">Approve Run</Button>
+            {run.status === 'under_review' && (
+              <Button variant="secondary" size="sm" disabled={sendBackMutation.isPending} onClick={() => sendBackMutation.mutate()}>
+                {sendBackMutation.isPending ? 'Sending…' : 'Send Back'}
+              </Button>
+            )}
+            {['calculated', 'under_review', 'approved', 'locked'].includes(run.status) && (
+              <Button variant="primary" size="sm" disabled={advanceMutation.isPending} onClick={() => advanceMutation.mutate()}>
+                {advanceMutation.isPending
+                  ? 'Working…'
+                  : run.status === 'calculated'
+                    ? 'Send for Review'
+                    : run.status === 'under_review'
+                      ? 'Approve Run'
+                      : run.status === 'approved'
+                        ? 'Lock Payroll'
+                        : 'Mark Paid'}
+              </Button>
+            )}
           </div>
         </div>
       </Card>

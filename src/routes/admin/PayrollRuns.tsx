@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/shared/ui/Card';
@@ -7,6 +8,7 @@ import { EmptyState, ErrorState, LoadingRows } from '@/shared/ui/EmptyState';
 import { PlusIcon, BanknoteIcon } from '@/shared/ui/icons';
 import { useSession } from '@/shared/lib/session';
 import { listPayrollRuns } from '@/modules/payroll/payrollService';
+import { NewPayrollRunModal } from './NewPayrollRunModal';
 
 const statusTone: Record<string, BadgeTone> = {
   draft: 'neutral', calculating: 'info', calculated: 'info', under_review: 'warning', approved: 'success', locked: 'neutral', paid: 'success', cancelled: 'danger',
@@ -19,6 +21,7 @@ export default function PayrollRuns() {
   const companyId = user!.companyId;
   const { data, isLoading, error } = useQuery({ queryKey: ['payroll-runs', companyId], queryFn: () => listPayrollRuns(companyId) });
   const runs = data ?? [];
+  const [showNew, setShowNew] = useState(false);
 
   return (
     <div className="flex flex-col gap-5">
@@ -27,7 +30,7 @@ export default function PayrollRuns() {
           <h1 className="text-[22px] font-bold text-text">Payroll</h1>
           <p className="mt-0.5 text-[13px] text-text-faint">All payroll runs, regular and off-cycle</p>
         </div>
-        <Button variant="primary" icon={<PlusIcon width={15} height={15} />}>New Payroll Run</Button>
+        <Button variant="primary" icon={<PlusIcon width={15} height={15} />} onClick={() => setShowNew(true)}>New Payroll Run</Button>
       </div>
 
       {error && <ErrorState message={(error as Error).message} />}
@@ -39,7 +42,7 @@ export default function PayrollRuns() {
           icon={<BanknoteIcon width={22} height={22} />}
           title="No payroll runs yet"
           description="Once you create and calculate a payroll run, it will appear here with its status through the approval workflow."
-          action={<Button variant="primary" icon={<PlusIcon width={15} height={15} />}>New Payroll Run</Button>}
+          action={<Button variant="primary" icon={<PlusIcon width={15} height={15} />} onClick={() => setShowNew(true)}>New Payroll Run</Button>}
         />
       ) : (
         <Card>
@@ -63,6 +66,8 @@ export default function PayrollRuns() {
           ))}
         </Card>
       )}
+
+      {showNew && <NewPayrollRunModal onClose={() => setShowNew(false)} />}
     </div>
   );
 }
