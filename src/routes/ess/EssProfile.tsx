@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Avatar } from '@/shared/ui/Avatar';
-import { ChevronRightIcon, FileTextIcon, ShieldIcon, BellIcon, LogOutIcon, AlertIcon } from '@/shared/ui/icons';
+import { ChevronRightIcon, FileTextIcon, ShieldIcon, BellIcon, LogOutIcon, AlertIcon, BoxIcon } from '@/shared/ui/icons';
 import { ErrorState } from '@/shared/ui/EmptyState';
 import { useSession } from '@/shared/lib/session';
 import { getEmployee } from '@/modules/employee/employeeService';
 import { DocumentsPanel } from '@/modules/document/DocumentsPanel';
 import { ResignationPanel } from './ResignationPanel';
+import { MyAssetsPanel } from './MyAssetsPanel';
 
 function Section({ title, rows }: { title: string; rows: { label: string; value: string }[] }) {
   return (
@@ -24,7 +25,7 @@ function Section({ title, rows }: { title: string; rows: { label: string; value:
 
 export default function EssProfile() {
   const { user, logout } = useSession();
-  const [panel, setPanel] = useState<'documents' | 'resignation' | null>(null);
+  const [panel, setPanel] = useState<'documents' | 'resignation' | 'assets' | null>(null);
   const { data: employee, error } = useQuery({
     queryKey: ['employee', user?.employeeId],
     queryFn: () => getEmployee(user!.employeeId),
@@ -47,6 +48,16 @@ export default function EssProfile() {
         <button onClick={() => setPanel(null)} className="self-start text-[12.5px] font-semibold text-accent">← Back to Profile</button>
         <div className="text-[19px] font-bold text-text">Resignation</div>
         <ResignationPanel />
+      </div>
+    );
+  }
+
+  if (panel === 'assets') {
+    return (
+      <div className="flex flex-col gap-4 px-5 pt-6">
+        <button onClick={() => setPanel(null)} className="self-start text-[12.5px] font-semibold text-accent">← Back to Profile</button>
+        <div className="text-[19px] font-bold text-text">My Assets</div>
+        <MyAssetsPanel />
       </div>
     );
   }
@@ -80,6 +91,7 @@ export default function EssProfile() {
           { icon: ShieldIcon, label: 'Tax Declaration', onClick: undefined },
           { icon: BellIcon, label: 'Notification Settings', onClick: undefined },
           { icon: AlertIcon, label: 'Resignation', onClick: () => setPanel('resignation') },
+          { icon: BoxIcon, label: 'My Assets', onClick: () => setPanel('assets') },
         ].map(({ icon: Icon, label, onClick }) => (
           <button
             key={label}

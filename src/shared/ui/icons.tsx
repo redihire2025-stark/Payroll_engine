@@ -27,6 +27,9 @@ export const BanknoteIcon = (p: IconProps) => (
 export const ReceiptIcon = (p: IconProps) => (
   <svg {...base} {...p}><path d="M6 3h12v18l-2.5-1.5L13 21l-2.5-1.5L8 21l-2-1.5V3Z" /><path d="M9 8h6M9 11.5h6M9 15h4" /></svg>
 );
+export const BoxIcon = (p: IconProps) => (
+  <svg {...base} {...p}><path d="M21 8 12 3 3 8l9 5 9-5Z" /><path d="M3 8v9l9 5 9-5V8" /><path d="M12 13v9" /></svg>
+);
 export const BarChartIcon = (p: IconProps) => (
   <svg {...base} {...p}><path d="M4 21V10M12 21V4M20 21v-7" /></svg>
 );
