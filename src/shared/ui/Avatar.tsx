@@ -7,7 +7,7 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-const palette = ['#0B5D45', '#2B5F8A', '#A6690A', '#7A4FB2', '#B23A34'];
+const palette = ['#0D9488', '#2563A6', '#B7791F', '#8B5CF6', '#C0392E'];
 function colorFor(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);

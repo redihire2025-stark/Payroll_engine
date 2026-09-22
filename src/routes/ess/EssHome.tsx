@@ -38,15 +38,15 @@ export default function EssHome() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-ink p-5 text-white">
+      <div className="rounded-2xl bg-gradient-to-br from-accent-strong to-accent p-5 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-1.5 text-[12px] text-[#AEB4C2]">
+            <div className="flex items-center gap-1.5 text-[12px] text-white/75">
               <ClockIcon width={14} height={14} />
               Not clocked in
             </div>
           </div>
-          <button className="rounded-lg bg-accent px-5 py-3 text-[13px] font-bold text-white">Punch In</button>
+          <button className="rounded-lg bg-white px-5 py-3 text-[13px] font-bold text-accent-strong">Punch In</button>
         </div>
       </div>
 

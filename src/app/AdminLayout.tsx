@@ -44,7 +44,7 @@ export default function AdminLayout() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-bg">
-      <aside className="flex w-60 shrink-0 flex-col justify-between bg-ink px-3 py-6">
+      <aside className="flex w-60 shrink-0 flex-col justify-between border-r border-border bg-surface px-3 py-6">
         <div className="flex flex-col gap-7">
           <div className="flex items-center gap-2.5 px-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent">
@@ -53,7 +53,7 @@ export default function AdminLayout() {
                 <path d="M14 3v6h6" />
               </svg>
             </div>
-            <span className="text-[15px] font-bold tracking-tight text-white">Payroll OS</span>
+            <span className="text-[15px] font-bold tracking-tight text-text">Payroll OS</span>
           </div>
           <nav className="flex flex-col gap-0.5">
             {nav.map(({ to, label, icon: Icon, end }) => (
@@ -63,7 +63,7 @@ export default function AdminLayout() {
                 end={end}
                 className={({ isActive }) =>
                   `flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] font-medium transition-colors ${
-                    isActive ? 'bg-accent/30 text-white font-semibold' : 'text-[#AEB4C2] hover:bg-white/5 hover:text-white'
+                    isActive ? 'bg-accent-soft text-accent font-semibold' : 'text-text-muted hover:bg-bg hover:text-text'
                   }`
                 }
               >
@@ -73,11 +73,11 @@ export default function AdminLayout() {
             ))}
           </nav>
         </div>
-        <button onClick={handleLogout} className="flex items-center gap-2.5 rounded-lg border-t border-white/10 px-2 pt-3 text-left">
+        <button onClick={handleLogout} className="flex items-center gap-2.5 rounded-lg border-t border-border px-2 pt-3 text-left hover:bg-bg">
           <Avatar name={user?.name ?? 'Guest'} size={30} />
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[13px] font-semibold text-white">{user?.name}</div>
-            <div className="text-[11.5px] text-[#8B93A1]">Payroll Admin · Sign out</div>
+            <div className="truncate text-[13px] font-semibold text-text">{user?.name}</div>
+            <div className="text-[11.5px] text-text-faint">Payroll Admin · Sign out</div>
           </div>
         </button>
       </aside>
