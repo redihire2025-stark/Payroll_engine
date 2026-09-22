@@ -62,28 +62,30 @@ export default function Register() {
       const userId = session.user.id;
       setCreatedUserId(userId);
 
-      let logoStoragePath: string | undefined;
-      if (logoFile) {
-        const ext = logoFile.name.split('.').pop() || 'png';
-        logoStoragePath = `${userId}/logo-${Date.now()}.${ext}`;
-        const { error: uploadErr } = await supabase.storage.from('company-logos').upload(logoStoragePath, logoFile, {
-          upsert: true,
-        });
-        if (uploadErr) throw new Error(`Logo upload failed: ${uploadErr.message}`);
-      }
-
+      // Company (and the registrant's company_owner role) must exist before
+      // any client-side write scoped to that company — including the logo
+      // upload below, whose storage policy checks the uploader's role on the
+      // company_id folder segment.
       const data = await callNetlifyFunction<{ companyId: string; companyName: string }>('register-company', {
         userId,
         orgName,
         legalName: legalName || orgName,
         country: 'IN',
-        logoStoragePath,
       });
       setCreatedCompanyId(data.companyId);
 
-      const companyLogoUrl = logoStoragePath
-        ? supabase.storage.from('company-logos').getPublicUrl(logoStoragePath).data.publicUrl
-        : null;
+      let companyLogoUrl: string | null = null;
+      if (logoFile) {
+        const ext = logoFile.name.split('.').pop() || 'png';
+        const logoStoragePath = `${data.companyId}/logo-${Date.now()}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from('company-logos').upload(logoStoragePath, logoFile, {
+          upsert: true,
+        });
+        if (uploadErr) throw new Error(`Logo upload failed: ${uploadErr.message}`);
+        companyLogoUrl = supabase.storage.from('company-logos').getPublicUrl(logoStoragePath).data.publicUrl;
+        const { error: updateErr } = await supabase.from('companies').update({ logo_url: companyLogoUrl }).eq('id', data.companyId);
+        if (updateErr) throw new Error(`Saving logo failed: ${updateErr.message}`);
+      }
       setFinalCompanyLogoUrl(companyLogoUrl);
 
       // Best-effort — a failed welcome email should never block onboarding.

@@ -17,7 +17,6 @@ interface RegisterCompanyRequest {
   orgName?: string;
   legalName?: string;
   country?: string;
-  logoStoragePath?: string; // path inside the public `company-logos` bucket, if one was uploaded
 }
 
 function slugify(name: string): string {
@@ -48,10 +47,6 @@ export const handler: Handler = async (event) => {
       .upsert({ id: body.userId, email: authUser.user.email, full_name: body.orgName + ' Owner' }, { onConflict: 'id' });
     if (platformUserErr) throw platformUserErr;
 
-    const logoUrl = body.logoStoragePath
-      ? admin.storage.from('company-logos').getPublicUrl(body.logoStoragePath).data.publicUrl
-      : null;
-
     const { data: company, error: companyErr } = await admin
       .from('companies')
       .insert({
@@ -59,7 +54,6 @@ export const handler: Handler = async (event) => {
         legal_name: body.legalName || body.orgName,
         country_code: body.country ?? 'IN',
         slug: slugify(body.orgName),
-        logo_url: logoUrl,
       })
       .select()
       .single();
