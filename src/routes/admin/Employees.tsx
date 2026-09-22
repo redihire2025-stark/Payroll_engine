@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/shared/ui/Button';
@@ -9,6 +10,8 @@ import { PlusIcon, UsersIcon } from '@/shared/ui/icons';
 import { useSession } from '@/shared/lib/session';
 import { listEmployees } from '@/modules/employee/employeeService';
 import { getCompany } from '@/modules/company/companyService';
+import { AddEmployeeModal } from './employees/AddEmployeeModal';
+import { ImportEmployeesModal } from './employees/ImportEmployeesModal';
 
 const statusTone = { active: 'success', on_leave: 'warning', exited: 'neutral' } as const;
 const statusLabel = { active: 'Active', on_leave: 'On Leave', exited: 'Exited' } as const;
@@ -18,6 +21,7 @@ const cols = '2.2fr 1.3fr 1.3fr 1fr 0.9fr 1fr';
 export default function Employees() {
   const { user } = useSession();
   const companyId = user!.companyId;
+  const [modal, setModal] = useState<'add' | 'import' | null>(null);
 
   const employeesQuery = useQuery({ queryKey: ['employees', companyId], queryFn: () => listEmployees(companyId) });
   const companyQuery = useQuery({ queryKey: ['company', companyId], queryFn: () => getCompany(companyId) });
@@ -44,7 +48,8 @@ export default function Employees() {
               </div>
             </div>
           )}
-          <Button variant="primary" icon={<PlusIcon width={15} height={15} />}>Add Employee</Button>
+          <Button variant="secondary" onClick={() => setModal('import')}>Import from Excel</Button>
+          <Button variant="primary" icon={<PlusIcon width={15} height={15} />} onClick={() => setModal('add')}>Add Employee</Button>
         </div>
       </div>
 
@@ -66,7 +71,7 @@ export default function Employees() {
           icon={<UsersIcon width={22} height={22} />}
           title="No employees yet"
           description="Add your first employee to start building out attendance, leave and payroll for this organization."
-          action={<Button variant="primary" icon={<PlusIcon width={15} height={15} />}>Add Employee</Button>}
+          action={<Button variant="primary" icon={<PlusIcon width={15} height={15} />} onClick={() => setModal('add')}>Add Employee</Button>}
         />
       ) : (
         <div className="rounded-xl border border-border bg-surface shadow-card">
@@ -98,6 +103,9 @@ export default function Employees() {
           ))}
         </div>
       )}
+
+      {modal === 'add' && <AddEmployeeModal companyId={companyId} onClose={() => setModal(null)} />}
+      {modal === 'import' && <ImportEmployeesModal companyId={companyId} onClose={() => setModal(null)} />}
     </div>
   );
 }

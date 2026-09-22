@@ -1,4 +1,5 @@
 import { supabase } from '@/shared/lib/supabaseClient';
+import { createOrgLookupCache, resolveBranchId, resolveDepartmentId, resolveDesignationId } from '@/modules/company/orgStructureService';
 
 export interface EmployeeLite {
   id: string;
@@ -121,4 +122,82 @@ export async function getEmployee(employeeId: string): Promise<EmployeeDetailRec
     dob: profile?.dob ?? null,
     gender: profile?.gender ?? null,
   };
+}
+
+export interface CreateEmployeeInput {
+  companyId: string;
+  employeeCode: string;
+  firstName: string;
+  lastName?: string;
+  personalEmail?: string;
+  phone?: string;
+  dob?: string;
+  gender?: string;
+  dateOfJoining: string;
+  employmentType?: string;
+  departmentName?: string;
+  designationTitle?: string;
+  branchName?: string;
+}
+
+/** Optional shared cache so a bulk import doesn't re-lookup/re-create the same department/designation/branch name per row. */
+type OrgLookupCache = Map<string, string>;
+
+export async function createEmployee(input: CreateEmployeeInput, cache: OrgLookupCache = createOrgLookupCache()): Promise<string> {
+  const [departmentId, designationId, branchId] = await Promise.all([
+    resolveDepartmentId(input.companyId, input.departmentName, cache),
+    resolveDesignationId(input.companyId, input.designationTitle, cache),
+    resolveBranchId(input.companyId, input.branchName, cache),
+  ]);
+
+  const { data: employee, error } = await supabase
+    .from('employees')
+    .insert({
+      company_id: input.companyId,
+      employee_code: input.employeeCode,
+      department_id: departmentId,
+      designation_id: designationId,
+      branch_id: branchId,
+      date_of_joining: input.dateOfJoining,
+      employment_type: input.employmentType || 'full_time',
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+
+  const { error: profileErr } = await supabase.from('employee_profiles').insert({
+    employee_id: employee.id,
+    first_name: input.firstName,
+    last_name: input.lastName || null,
+    personal_email: input.personalEmail || null,
+    phone: input.phone || null,
+    dob: input.dob || null,
+    gender: input.gender || null,
+  });
+  if (profileErr) throw profileErr;
+
+  return employee.id as string;
+}
+
+export interface BulkCreateResult {
+  successCount: number;
+  errors: { row: number; message: string }[];
+}
+
+/** Runs sequentially (not in parallel) so department/designation/branch name lookups can share one cache without racing duplicate creates. */
+export async function bulkCreateEmployees(companyId: string, rows: Omit<CreateEmployeeInput, 'companyId'>[]): Promise<BulkCreateResult> {
+  const cache = createOrgLookupCache();
+  const errors: BulkCreateResult['errors'] = [];
+  let successCount = 0;
+
+  for (let i = 0; i < rows.length; i += 1) {
+    try {
+      await createEmployee({ ...rows[i], companyId }, cache);
+      successCount += 1;
+    } catch (err) {
+      errors.push({ row: i + 1, message: err instanceof Error ? err.message : 'Unknown error' });
+    }
+  }
+
+  return { successCount, errors };
 }

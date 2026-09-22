@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/shared/ui/Badge';
 import { EmptyState, ErrorState, LoadingRows } from '@/shared/ui/EmptyState';
 import { CalendarIcon } from '@/shared/ui/icons';
 import { useSession } from '@/shared/lib/session';
-import { listMyLeaveBalances, listMyLeaveRequests } from '@/modules/leave/leaveService';
+import { listMyLeaveBalances, listMyLeaveRequests, listLeaveTypes, createLeaveRequest } from '@/modules/leave/leaveService';
+import { listHolidays } from '@/modules/company/holidayService';
 
-const tabs = ['Balance', 'Apply', 'History'] as const;
+const tabs = ['Balance', 'Apply', 'History', 'Holidays'] as const;
 
 export default function EssLeave() {
   const { user } = useSession();
   const employeeId = user?.employeeId;
+  const companyId = user?.companyId;
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<(typeof tabs)[number]>('Balance');
   const year = new Date().getFullYear();
 
@@ -23,6 +26,39 @@ export default function EssLeave() {
     queryKey: ['my-leave-requests', employeeId],
     queryFn: () => listMyLeaveRequests(employeeId!),
     enabled: Boolean(employeeId) && tab === 'History',
+  });
+  const leaveTypesQuery = useQuery({
+    queryKey: ['leave-types', companyId],
+    queryFn: () => listLeaveTypes(companyId!),
+    enabled: Boolean(companyId) && tab === 'Apply',
+  });
+  const holidaysQuery = useQuery({
+    queryKey: ['holidays', companyId],
+    queryFn: () => listHolidays(companyId!),
+    enabled: Boolean(companyId) && tab === 'Holidays',
+  });
+
+  const [applyForm, setApplyForm] = useState({ leaveTypeId: '', startDate: '', endDate: '', reason: '' });
+  const [applyError, setApplyError] = useState<string | null>(null);
+  const [applySuccess, setApplySuccess] = useState(false);
+
+  const applyMutation = useMutation({
+    mutationFn: () =>
+      createLeaveRequest({
+        companyId: companyId!,
+        employeeId: employeeId!,
+        leaveTypeId: applyForm.leaveTypeId,
+        startDate: applyForm.startDate,
+        endDate: applyForm.endDate,
+        reason: applyForm.reason || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-leave-requests', employeeId] });
+      setApplyForm({ leaveTypeId: '', startDate: '', endDate: '', reason: '' });
+      setApplySuccess(true);
+      setApplyError(null);
+    },
+    onError: (err) => setApplyError(err instanceof Error ? err.message : 'Could not submit that request.'),
   });
 
   return (
@@ -65,27 +101,75 @@ export default function EssLeave() {
       )}
 
       {tab === 'Apply' && (
-        <div className="flex flex-col gap-3.5 rounded-xl border border-border bg-surface p-4">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[12px] font-semibold text-text-muted">Leave Type</span>
-            <select className="rounded-lg border border-border bg-white px-3 py-2.5 text-[13px]" />
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[12px] font-semibold text-text-muted">Start Date</span>
-              <input type="date" className="rounded-lg border border-border bg-white px-3 py-2.5 text-[13px]" />
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[12px] font-semibold text-text-muted">End Date</span>
-              <input type="date" className="rounded-lg border border-border bg-white px-3 py-2.5 text-[13px]" />
-            </label>
-          </div>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[12px] font-semibold text-text-muted">Reason</span>
-            <textarea rows={3} className="rounded-lg border border-border bg-white px-3 py-2.5 text-[13px]" />
-          </label>
-          <button className="rounded-lg bg-accent py-3 text-[13px] font-bold text-white">Submit Request</button>
-        </div>
+        <form
+          className="flex flex-col gap-3.5 rounded-xl border border-border bg-surface p-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setApplySuccess(false);
+            applyMutation.mutate();
+          }}
+        >
+          {(leaveTypesQuery.data?.length ?? 0) === 0 && !leaveTypesQuery.isLoading ? (
+            <p className="text-[12.5px] text-text-faint">No leave types have been set up yet — ask your admin to add one before you can apply.</p>
+          ) : (
+            <>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[12px] font-semibold text-text-muted">Leave Type</span>
+                <select
+                  className="rounded-lg border border-border bg-white px-3 py-2.5 text-[13px]"
+                  value={applyForm.leaveTypeId}
+                  onChange={(e) => setApplyForm((f) => ({ ...f, leaveTypeId: e.target.value }))}
+                  required
+                >
+                  <option value="">Select…</option>
+                  {(leaveTypesQuery.data ?? []).map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[12px] font-semibold text-text-muted">Start Date</span>
+                  <input
+                    type="date"
+                    className="rounded-lg border border-border bg-white px-3 py-2.5 text-[13px]"
+                    value={applyForm.startDate}
+                    onChange={(e) => setApplyForm((f) => ({ ...f, startDate: e.target.value }))}
+                    required
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[12px] font-semibold text-text-muted">End Date</span>
+                  <input
+                    type="date"
+                    className="rounded-lg border border-border bg-white px-3 py-2.5 text-[13px]"
+                    value={applyForm.endDate}
+                    onChange={(e) => setApplyForm((f) => ({ ...f, endDate: e.target.value }))}
+                    required
+                  />
+                </label>
+              </div>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[12px] font-semibold text-text-muted">Reason</span>
+                <textarea
+                  rows={3}
+                  className="rounded-lg border border-border bg-white px-3 py-2.5 text-[13px]"
+                  value={applyForm.reason}
+                  onChange={(e) => setApplyForm((f) => ({ ...f, reason: e.target.value }))}
+                />
+              </label>
+              {applyError && <p className="text-[12px] text-danger">{applyError}</p>}
+              {applySuccess && <p className="text-[12px] text-success">Request submitted.</p>}
+              <button
+                type="submit"
+                className="rounded-lg bg-accent py-3 text-[13px] font-bold text-white disabled:opacity-50"
+                disabled={applyMutation.isPending || !applyForm.leaveTypeId || !applyForm.startDate || !applyForm.endDate}
+              >
+                {applyMutation.isPending ? 'Submitting…' : 'Submit Request'}
+              </button>
+            </>
+          )}
+        </form>
       )}
 
       {tab === 'History' && (
@@ -107,6 +191,35 @@ export default function EssLeave() {
                   {l.reason && <div className="mt-1 text-[11.5px] text-text-faint">{l.reason}</div>}
                 </div>
               ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === 'Holidays' && (
+        <>
+          {holidaysQuery.error && <ErrorState message={(holidaysQuery.error as Error).message} />}
+          {holidaysQuery.isLoading ? (
+            <LoadingRows />
+          ) : (holidaysQuery.data?.length ?? 0) === 0 ? (
+            <EmptyState icon={<CalendarIcon width={20} height={20} />} title="No holidays listed yet" description="Your admin hasn't added the company holiday calendar yet." />
+          ) : (
+            <div className="flex flex-col gap-2">
+              {(holidaysQuery.data ?? []).map((h) => {
+                const isPast = h.date < new Date().toISOString().slice(0, 10);
+                return (
+                  <div key={h.id} className={`flex items-center justify-between rounded-xl border border-border bg-surface p-3.5 ${isPast ? 'opacity-50' : ''}`}>
+                    <div>
+                      <div className="text-[13px] font-semibold text-text">{h.name}</div>
+                      <div className="mt-0.5 text-[11.5px] text-text-faint">
+                        {new Date(h.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        {h.branchName && ` · ${h.branchName}`}
+                      </div>
+                    </div>
+                    {h.isOptional && <Badge tone="neutral">Optional</Badge>}
+                  </div>
+                );
+              })}
             </div>
           )}
         </>

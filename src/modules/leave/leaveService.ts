@@ -42,6 +42,74 @@ export async function listLeaveRequests(companyId: string): Promise<LeaveRequest
   });
 }
 
+export async function updateLeaveRequestStatus(leaveRequestId: string, status: 'approved' | 'rejected'): Promise<void> {
+  const { error } = await supabase.from('leave_requests').update({ status }).eq('id', leaveRequestId);
+  if (error) throw error;
+}
+
+export interface LeaveTypeOption {
+  id: string;
+  name: string;
+  code: string;
+  isPaid: boolean;
+}
+
+export async function listLeaveTypes(companyId: string): Promise<LeaveTypeOption[]> {
+  const { data, error } = await supabase
+    .from('leave_types')
+    .select('id, name, code, is_paid')
+    .eq('company_id', companyId)
+    .order('name');
+  if (error) throw error;
+  return (data ?? []).map((t) => ({ id: t.id as string, name: t.name as string, code: t.code as string, isPaid: t.is_paid as boolean }));
+}
+
+export interface CreateLeaveTypeInput {
+  companyId: string;
+  name: string;
+  code: string;
+  isPaid: boolean;
+}
+
+export async function createLeaveType(input: CreateLeaveTypeInput): Promise<void> {
+  const { error } = await supabase.from('leave_types').insert({
+    company_id: input.companyId,
+    name: input.name,
+    code: input.code,
+    is_paid: input.isPaid,
+  });
+  if (error) throw error;
+}
+
+function countInclusiveDays(startDate: string, endDate: string): number {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffMs = end.getTime() - start.getTime();
+  return Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1);
+}
+
+export interface CreateLeaveRequestInput {
+  companyId: string;
+  employeeId: string;
+  leaveTypeId: string;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+}
+
+export async function createLeaveRequest(input: CreateLeaveRequestInput): Promise<void> {
+  const { error } = await supabase.from('leave_requests').insert({
+    company_id: input.companyId,
+    employee_id: input.employeeId,
+    leave_type_id: input.leaveTypeId,
+    start_date: input.startDate,
+    end_date: input.endDate,
+    days: countInclusiveDays(input.startDate, input.endDate),
+    reason: input.reason || null,
+  });
+  if (error) throw error;
+}
+
 export interface LeaveBalanceRow {
   leaveTypeId: string;
   name: string;
