@@ -84,19 +84,28 @@ export interface MyPayslipRow {
   periodEnd: string;
   netPay: number;
   runStatus: string;
+  payslipId: string | null;
 }
 
 export async function listMyPayslips(employeeId: string): Promise<MyPayslipRow[]> {
   const { data, error } = await supabase
     .from('payroll_items')
-    .select('net_pay, payroll_runs(id, period_start, period_end, status)')
+    .select('net_pay, payroll_runs(id, period_start, period_end, status), payslips(id)')
     .eq('employee_id', employeeId);
   if (error) throw error;
   return (data ?? [])
     .map((r) => {
       const run = r.payroll_runs as unknown as { id: string; period_start: string; period_end: string; status: string } | null;
       if (!run) return null;
-      return { runId: run.id, periodStart: run.period_start, periodEnd: run.period_end, netPay: Number(r.net_pay), runStatus: run.status };
+      const payslip = (Array.isArray(r.payslips) ? r.payslips[0] : r.payslips) as { id: string } | null;
+      return {
+        runId: run.id,
+        periodStart: run.period_start,
+        periodEnd: run.period_end,
+        netPay: Number(r.net_pay),
+        runStatus: run.status,
+        payslipId: payslip?.id ?? null,
+      };
     })
     .filter((r): r is MyPayslipRow => r !== null)
     .sort((a, b) => b.periodStart.localeCompare(a.periodStart));

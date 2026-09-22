@@ -10,6 +10,7 @@ import { EmptyState, ErrorState, LoadingRows } from '@/shared/ui/EmptyState';
 import { formatINR } from '@/shared/lib/format';
 import { getPayrollRun, listPayrollItems } from '@/modules/payroll/payrollService';
 import { advancePayrollRun, sendBackToDraft } from '@/modules/payroll/runPayroll';
+import { generatePayslipsForRun } from '@/modules/payslip/payslipService';
 import { useSession } from '@/shared/lib/session';
 
 const STEPS = ['Draft', 'Calculating', 'Calculated', 'Under Review', 'Approved', 'Locked', 'Paid'];
@@ -30,6 +31,9 @@ export default function PayrollRunDetail() {
   const sendBackMutation = useMutation({
     mutationFn: () => sendBackToDraft(id!),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['payroll-run', id] }),
+  });
+  const payslipsMutation = useMutation({
+    mutationFn: () => generatePayslipsForRun(id!, user!.companyId),
   });
 
   const run = runQuery.data;
@@ -70,8 +74,23 @@ export default function PayrollRunDetail() {
                         : 'Mark Paid'}
               </Button>
             )}
+            {['locked', 'paid'].includes(run.status) && (
+              <Button variant="secondary" size="sm" disabled={payslipsMutation.isPending} onClick={() => payslipsMutation.mutate()}>
+                {payslipsMutation.isPending ? 'Generating…' : 'Generate Payslips'}
+              </Button>
+            )}
           </div>
         </div>
+        {payslipsMutation.isSuccess && (
+          <div className="border-t border-border-soft px-6 py-3 text-[12.5px] text-success">
+            Generated {payslipsMutation.data.generated} payslip(s){payslipsMutation.data.alreadyExisted > 0 ? `, ${payslipsMutation.data.alreadyExisted} already existed` : ''}.
+          </div>
+        )}
+        {payslipsMutation.isError && (
+          <div className="border-t border-border-soft px-6 py-3 text-[12.5px] text-danger">
+            {(payslipsMutation.error as Error).message}
+          </div>
+        )}
       </Card>
 
       <div className="grid grid-cols-4 gap-4">

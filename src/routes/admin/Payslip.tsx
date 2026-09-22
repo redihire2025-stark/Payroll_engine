@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/shared/ui/Button';
@@ -8,10 +9,12 @@ import { useSession } from '@/shared/lib/session';
 import { getCompany } from '@/modules/company/companyService';
 import { getEmployee } from '@/modules/employee/employeeService';
 import { getPayrollRun, getPayrollItemForEmployee } from '@/modules/payroll/payrollService';
+import { getPayslipIdForItem, getSignedPayslipUrl } from '@/modules/payslip/payslipService';
 
 export default function Payslip() {
   const { id, employeeId } = useParams();
   const { user } = useSession();
+  const [downloading, setDownloading] = useState(false);
 
   const companyQuery = useQuery({ queryKey: ['company', user!.companyId], queryFn: () => getCompany(user!.companyId) });
   const employeeQuery = useQuery({ queryKey: ['employee', employeeId], queryFn: () => getEmployee(employeeId!), enabled: Boolean(employeeId) });
@@ -21,6 +24,22 @@ export default function Payslip() {
     queryFn: () => getPayrollItemForEmployee(id!, employeeId!),
     enabled: Boolean(id && employeeId),
   });
+  const payslipIdQuery = useQuery({
+    queryKey: ['payslip-id', itemQuery.data?.id],
+    queryFn: () => getPayslipIdForItem(itemQuery.data!.id),
+    enabled: Boolean(itemQuery.data?.id),
+  });
+
+  async function handleDownload() {
+    if (!payslipIdQuery.data) return;
+    setDownloading(true);
+    try {
+      const url = await getSignedPayslipUrl(payslipIdQuery.data, user!.id);
+      window.open(url, '_blank');
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   const error = companyQuery.error || employeeQuery.error || runQuery.error || itemQuery.error;
   const loading = companyQuery.isLoading || employeeQuery.isLoading || runQuery.isLoading || itemQuery.isLoading;
@@ -43,9 +62,15 @@ export default function Payslip() {
         <div className="text-[12.5px] text-text-faint">
           <Link to="/admin/payroll" className="text-accent">Payroll</Link> / {run.periodStart} – {run.periodEnd} / {employee.name}
         </div>
-        <a href={`/print/payslip/${run.id}/${employee.id}`} target="_blank" rel="noreferrer">
-          <Button variant="primary" size="sm" icon={<DownloadIcon width={15} height={15} />}>Download PDF</Button>
-        </a>
+        {payslipIdQuery.data ? (
+          <Button variant="primary" size="sm" icon={<DownloadIcon width={15} height={15} />} disabled={downloading} onClick={handleDownload}>
+            {downloading ? 'Opening…' : 'Download PDF'}
+          </Button>
+        ) : (
+          <a href={`/print/payslip/${run.id}/${employee.id}`} target="_blank" rel="noreferrer">
+            <Button variant="secondary" size="sm" icon={<DownloadIcon width={15} height={15} />}>Print / Save as PDF</Button>
+          </a>
+        )}
       </div>
 
       <div className="mx-auto w-full max-w-2xl shadow-card rounded-xl">
