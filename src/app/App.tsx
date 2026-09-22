@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { SessionProvider } from '@/shared/lib/session';
+import { ConfigWarningBanner } from '@/shared/ui/ConfigWarningBanner';
 import { ProtectedRoute } from './ProtectedRoute';
 import AdminLayout from './AdminLayout';
 import EssLayout from './EssLayout';
@@ -29,6 +30,7 @@ import ManagerTeam from '@/routes/ess/ManagerTeam';
 export default function App() {
   return (
     <SessionProvider>
+      <ConfigWarningBanner />
       <Routes>
         {/* The landing page IS the sign-in page — no dashboard is shown to a signed-out visitor. */}
         <Route path="/" element={<Landing />} />
