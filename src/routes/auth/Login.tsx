@@ -35,7 +35,7 @@ export default function Login() {
     setError(null);
     setBusy(true);
     try {
-      await verifyOtp(email, code);
+      await verifyOtp(email, code, 'login');
       // Signed in with Supabase — now resolve which company role(s) this
       // user was granted, which is what decides Admin Console vs Employee app.
       const roles = await getMyCompanyRoles();

@@ -56,7 +56,7 @@ export default function Register() {
     setError(null);
     setBusy(true);
     try {
-      const session = await verifyOtp(email, code);
+      const session = await verifyOtp(email, code, 'signup');
       if (!session?.user) throw new Error('Verification succeeded but no session was returned.');
       const userId = session.user.id;
       setCreatedUserId(userId);

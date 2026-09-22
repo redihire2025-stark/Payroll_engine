@@ -1,16 +1,14 @@
 // Transactional email — payslip-ready alerts, leave/attendance decisions,
 // and any other in-app notification that should also land in an inbox.
-// Distinct from Supabase Auth's own OTP emails (those are sent by Supabase
-// itself via whatever SMTP provider is configured in the dashboard, not by
-// this function) — see docs/architecture/17-supabase-resend-setup.md.
+// Distinct from the OTP email (send-otp): that's a fixed template with its
+// own dedicated function; this one takes arbitrary subject/html from the
+// caller. See docs/architecture/17-supabase-resend-setup.md.
 //
 // Deploy: supabase functions deploy send-notification
 // Secret required: supabase secrets set RESEND_API_KEY=<your Resend API key>
-// Optional secret: NOTIFICATIONS_FROM_EMAIL (defaults to Resend's shared
-// sandbox sender, which only delivers to your own verified Resend account
-// email until you verify a real sending domain in Resend).
 
 import { corsHeaders } from '../_shared/cors.ts';
+import { sendEmail } from '../_shared/resend.ts';
 
 interface SendNotificationRequest {
   to: string | string[];
@@ -27,30 +25,12 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as SendNotificationRequest;
     if (!body.to || !body.subject || !body.html) {
       return new Response(JSON.stringify({ error: 'to, subject and html are required' }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    if (!resendApiKey) {
-      throw new Error('RESEND_API_KEY is not configured — run: supabase secrets set RESEND_API_KEY=...');
-    }
-    const from = Deno.env.get('NOTIFICATIONS_FROM_EMAIL') ?? 'Payroll OS <onboarding@resend.dev>';
-
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ from, to: body.to, subject: body.subject, html: body.html }),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Resend API error (${res.status}): ${text}`);
-    }
+    await sendEmail(body.to, body.subject, body.html);
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -10,55 +10,67 @@ scratch, which is more moving parts, not fewer. This document records the
 two concrete additions on top of that original design: **email OTP login**
 and **Resend as the email provider**.
 
-## 17.1 Authentication: passwordless email OTP
+## 17.1 Authentication: fully custom email OTP (not Supabase Auth's own)
 
 Every login — admin or employee — is a single form: enter your work email,
 receive a 6-digit code, enter it. No passwords to reset, phish, or reuse.
 
-- **Login** (`/auth/login`): `supabase.auth.signInWithOtp({ email, options:
-  { shouldCreateUser: false } })`. `shouldCreateUser: false` is the
-  enforcement point for "only a seat the admin granted can sign in" — an
-  email with no existing `auth.users` row is rejected here, not just hidden
-  in the UI.
-- **Registration** (`/auth/register`): the one place `shouldCreateUser:
-  true` is used — this is how a new company's first user (the eventual
-  `company_owner`) gets created.
-- After `verifyOtp` succeeds, the client calls `getMyCompanyRoles()`
-  ([authService.ts](../../src/modules/identity/authService.ts)), which
-  queries `user_company_roles` joined to `companies`. That result — not the
-  URL the user opened — is what `landingRouteFor()` uses to send them to
-  `/admin` or `/app` (see [16-self-service-onboarding.md](./16-self-service-onboarding.md) §16.1).
-- The OTP *email itself* is sent by Supabase Auth's own mailer, not by
-  application code — which is why the SMTP provider matters (below).
+The OTP is **not** Supabase Auth's built-in OTP (`signInWithOtp` /
+Supabase's own mailer). It's generated, stored and emailed entirely by our
+own code, so the message can be fully ours — sent from
+`support@rhirepro.com` via Resend, with our own copy — rather than
+Supabase's default template and whatever SMTP happens to be configured in
+the dashboard.
+
+- **`send-otp`** ([Edge Function](../../supabase/functions/send-otp/index.ts)):
+  generates a random 6-digit code, stores only its SHA-256 hash in
+  `otp_codes` ([migration 0007](../../supabase/migrations/0007_otp_codes.sql),
+  10-minute expiry, invalidates any earlier unconsumed code for that
+  email+purpose), and emails the plaintext code via
+  [`_shared/resend.ts`](../../supabase/functions/_shared/resend.ts). For
+  `purpose: 'login'`, it first checks `platform_users` for that email and
+  refuses to send a code at all if no account exists — the same
+  "only a seat the admin granted can sign in" rule as before, just enforced
+  against our own table instead of Supabase Auth's `shouldCreateUser: false`.
+- **`verify-otp`** ([Edge Function](../../supabase/functions/verify-otp/index.ts)):
+  checks the submitted code against the stored hash (rate-limited to 5
+  attempts per code), and on success **bridges to a real Supabase Auth
+  session** — it calls `admin.auth.admin.generateLink()` (the admin API,
+  which mints a session token server-side *without* Supabase sending its
+  own email) and returns the resulting `hashed_token` to the client. The
+  client then calls `supabase.auth.verifyOtp({ token_hash, type })`
+  ([authService.ts](../../src/modules/identity/authService.ts)) to actually
+  establish the session locally. This is a documented Supabase pattern for
+  custom-SMTP OTP delivery — it means RLS, `auth.uid()` and
+  `getMyCompanyRoles()` below work exactly as if Supabase's own OTP had
+  been used; only *where the code came from and who emailed it* changed.
+- After that session is established, the client calls `getMyCompanyRoles()`,
+  which queries `user_company_roles` joined to `companies`. That result —
+  not the URL the user opened — is what `landingRouteFor()` uses to send
+  them to `/admin` or `/app` (see
+  [16-self-service-onboarding.md](./16-self-service-onboarding.md) §16.1).
 
 ## 17.2 Email delivery: Resend
 
-Two distinct paths send email, and they're configured differently:
+Every email — the OTP code and every notification — goes through the same
+path: a Resend HTTP API call (`_shared/resend.ts`) from a
+`RESEND_API_KEY` **Edge Function secret** (`supabase secrets set
+RESEND_API_KEY=...`), never embedded in frontend code, never committed to
+the repo, sent from `support@rhirepro.com` by default
+(`NOTIFICATIONS_FROM_EMAIL` overrides it per-environment if needed).
 
-1. **Auth emails (OTP codes, and later password-reset/magic-link if ever
-   added)** — sent automatically by Supabase Auth. Configured once, in the
-   Supabase Dashboard, **not in application code**:
-   `Authentication → Emails → SMTP Settings`:
-   - Host: `smtp.resend.com`
-   - Port: `587`
-   - Username: `resend`
-   - Password: the Resend API key
-   - Sender email: an address on a domain verified in Resend (Resend's
-     sandbox sender only delivers to the Resend account's own email until a
-     real domain is verified — fine for testing, not for real employees).
-2. **Transactional/notification emails** (payslip-ready, leave decisions,
-   the registration welcome email) — sent by the
-   [`send-notification`](../../supabase/functions/send-notification/index.ts)
-   Edge Function, which calls Resend's HTTP API directly
-   (`POST https://api.resend.com/emails`) using a `RESEND_API_KEY` **Edge
-   Function secret** (`supabase secrets set RESEND_API_KEY=...`) — never
-   embedded in frontend code, never committed to the repo. The reusable
-   client-side wrapper is
-   [`notificationService.ts`](../../src/modules/notifications/notificationService.ts).
+- **`send-otp`** — the sign-in code, fixed template.
+- **`send-notification`** — everything else (payslip-ready, leave/attendance
+  decisions, the registration welcome email), taking arbitrary
+  subject/html from the caller. Client-side wrapper:
+  [`notificationService.ts`](../../src/modules/notifications/notificationService.ts).
 
-Both paths point at the same Resend account but are configured
-independently — rotating the API key means updating both the Supabase SMTP
-password and the `RESEND_API_KEY` secret.
+**No Supabase Dashboard SMTP configuration is needed at all** — since
+Supabase Auth's own mailer is never invoked (no `signInWithOtp` anywhere in
+this codebase), there's nothing to point at Resend in the dashboard. The
+one prerequisite that *is* still a dashboard/account step, outside this
+repo: `rhirepro.com` must be a verified sending domain in Resend, or
+`support@rhirepro.com` will be rejected as a sender.
 
 ## 17.3 Self-service registration, concretely
 
@@ -78,10 +90,10 @@ Honest status, so nothing here is overstated:
 
 | Piece | Status |
 |---|---|
-| Supabase Auth OTP login/registration | Real code, calling the real project once env vars are set — **not yet tested against a live database**, since this session's network cannot reach Supabase (see §17.5) |
-| `register-company`, `send-notification` Edge Functions | Written, not yet deployed (`supabase functions deploy` needs to run from a machine with real network access) |
-| Migrations 0001–0005 | Written, not yet applied to the live project |
-| Everything else (employee directory, attendance, leave, salary, payroll, reports) | Still the mock data layer from Phases 1–7 — swapping these to real `supabase-js` calls is the next slice of work, deliberately not done blind in the same pass as the auth/email wiring, since it can't be tested here either |
+| Custom OTP login/registration (send-otp + verify-otp) | Real code, calling the real project once env vars are set — **not yet tested against a live database**, since this session's network cannot reach Supabase (see §17.5) |
+| `register-company`, `send-otp`, `verify-otp`, `send-notification` Edge Functions | Written, not yet deployed (`supabase functions deploy` needs to run from a machine with real network access) |
+| Migrations 0001–0007 | Written, not yet applied to the live project |
+| Employee directory, attendance, leave, salary, payroll, reports | Wired to real `supabase-js` queries (see docs/architecture — this is no longer mock data), but likewise unverified against a live schema for the same network-access reason |
 
 ## 17.5 Why none of this could be tested from within the build session
 
