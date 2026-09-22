@@ -24,6 +24,7 @@ import Reimbursements from '@/routes/admin/Reimbursements';
 import Assets from '@/routes/admin/Assets';
 import Helpdesk from '@/routes/admin/Helpdesk';
 import Performance from '@/routes/admin/Performance';
+import Recruitment from '@/routes/admin/Recruitment';
 import EssHome from '@/routes/ess/EssHome';
 import EssAttendance from '@/routes/ess/EssAttendance';
 import EssLeave from '@/routes/ess/EssLeave';
@@ -59,6 +60,7 @@ export default function App() {
             <Route path="assets" element={<Assets />} />
             <Route path="helpdesk" element={<Helpdesk />} />
             <Route path="performance" element={<Performance />} />
+            <Route path="recruitment" element={<Recruitment />} />
             <Route path="reports" element={<Reports />} />
             <Route path="audit-log" element={<AuditLog />} />
           </Route>
