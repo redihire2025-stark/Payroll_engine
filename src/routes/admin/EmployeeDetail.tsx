@@ -10,6 +10,7 @@ import { getEmployee, deactivateEmployee } from '@/modules/employee/employeeServ
 import { useSession } from '@/shared/lib/session';
 import { EditEmployeeModal } from './employees/EditEmployeeModal';
 import { PortalAccessCard } from './employees/PortalAccessCard';
+import { DocumentsPanel } from '@/modules/document/DocumentsPanel';
 
 const tabs = ['Profile', 'Employment', 'Salary', 'Documents', 'Attendance', 'Leave', 'History'];
 const statusTone = { active: 'success', on_leave: 'warning', exited: 'neutral' } as const;
@@ -129,6 +130,13 @@ export default function EmployeeDetail() {
         </Card>
 
         <PortalAccessCard employee={employee} />
+
+        <Card>
+          <CardHeader title="Documents" />
+          <div className="px-5 py-4">
+            <DocumentsPanel employeeId={employee.id} canVerify />
+          </div>
+        </Card>
       </div>
 
       {editing && <EditEmployeeModal companyId={companyId} employee={employee} onClose={() => setEditing(false)} />}
