@@ -10,9 +10,21 @@ on:
   workflow_dispatch:
     inputs:
       migration:
-        description: "Migration filename (e.g. 0002_attendance_leave_salary.sql), or 'all' to run 0001-0006 in order"
+        description: "Migration filename (e.g. 0008_extended_rls_policies.sql), or 'all' to run 0001-0006 in order"
         required: true
         default: "all"
+      pg_host:
+        description: "DB host. GitHub runners lack IPv6 egress, and db.<ref>.supabase.co often resolves to IPv6-only — use the Session Pooler host from Supabase Dashboard > Project Settings > Database (e.g. aws-0-<region>.pooler.supabase.com) instead."
+        required: true
+        default: "db.opnomzejmppuxjrnspox.supabase.co"
+      pg_user:
+        description: "DB user. Plain 'postgres' for a direct connection; 'postgres.<project-ref>' when using the pooler host."
+        required: true
+        default: "postgres"
+      pg_port:
+        description: "DB port. 5432 for direct connection or Session Pooler; 6543 for Transaction Pooler."
+        required: true
+        default: "5432"
 
 jobs:
   migrate:
@@ -29,7 +41,9 @@ jobs:
 
       - name: Run migration(s)
         env:
-          PGHOST: db.opnomzejmppuxjrnspox.supabase.co
+          PGHOST: ${{ inputs.pg_host }}
+          PGUSER: ${{ inputs.pg_user }}
+          PGPORT: ${{ inputs.pg_port }}
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
           set -e
@@ -45,6 +59,8 @@ jobs:
       - name: List current tables (always, for diagnostics)
         if: always()
         env:
-          PGHOST: db.opnomzejmppuxjrnspox.supabase.co
+          PGHOST: ${{ inputs.pg_host }}
+          PGUSER: ${{ inputs.pg_user }}
+          PGPORT: ${{ inputs.pg_port }}
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: node scripts/list-tables.mjs
