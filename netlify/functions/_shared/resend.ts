@@ -1,11 +1,16 @@
 const DEFAULT_FROM = 'Payroll OS <support@rhirepro.com>';
 
+/**
+ * RESEND_API_KEY is a Netlify environment variable, never VITE_-prefixed —
+ * it only ever runs here, server-side in the Netlify Function's Lambda
+ * runtime, never shipped to the browser.
+ */
 export async function sendEmail(to: string | string[], subject: string, html: string): Promise<void> {
-  const resendApiKey = Deno.env.get('RESEND_API_KEY');
+  const resendApiKey = process.env.RESEND_API_KEY;
   if (!resendApiKey) {
-    throw new Error('RESEND_API_KEY is not configured — run: supabase secrets set RESEND_API_KEY=...');
+    throw new Error('RESEND_API_KEY is not configured in Netlify environment variables.');
   }
-  const from = Deno.env.get('NOTIFICATIONS_FROM_EMAIL') ?? DEFAULT_FROM;
+  const from = process.env.NOTIFICATIONS_FROM_EMAIL ?? DEFAULT_FROM;
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',

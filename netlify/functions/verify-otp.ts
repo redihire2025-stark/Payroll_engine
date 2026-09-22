@@ -1,43 +1,36 @@
 // Verifies our own OTP code, then bridges to a REAL Supabase Auth session
-// — this is what keeps everything else (RLS, auth.uid(), getMyCompanyRoles)
-// unchanged even though the OTP itself is no longer Supabase's. The bridge
-// is a documented Supabase pattern for custom-SMTP OTP delivery: mint a
-// token server-side with the admin API (never emailed by Supabase itself),
-// hand its hashed_token to the client, which exchanges it for a session via
+// — this is what keeps RLS/auth.uid()/getMyCompanyRoles unchanged even
+// though the OTP itself is no longer Supabase's. The bridge is a
+// documented Supabase pattern for custom OTP delivery: mint a token
+// server-side with the admin API (never emailed by Supabase), hand its
+// hashed_token to the client, which exchanges it for a session via
 // supabase.auth.verifyOtp({ token_hash, type }).
-//
-// Deploy: supabase functions deploy verify-otp
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import { corsHeaders } from '../_shared/cors.ts';
+import type { Handler } from '@netlify/functions';
+import { randomUUID } from 'node:crypto';
+import { getSupabaseAdmin } from './_shared/supabaseAdmin';
+import { hashCode } from './_shared/otp';
+import { json } from './_shared/http';
 
 interface VerifyOtpRequest {
-  email: string;
-  code: string;
-  purpose: 'login' | 'signup';
+  email?: string;
+  code?: string;
+  purpose?: 'login' | 'signup';
 }
 
 const MAX_ATTEMPTS = 5;
 
-async function sha256Hex(input: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
-  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-}
-
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+export const handler: Handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') return json({ ok: true });
+  if (event.httpMethod !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   try {
-    const { email, code, purpose } = (await req.json()) as VerifyOtpRequest;
+    const { email, code, purpose } = JSON.parse(event.body || '{}') as VerifyOtpRequest;
     if (!email || !code || (purpose !== 'login' && purpose !== 'signup')) {
       return json({ error: 'email, code and a valid purpose are required' });
     }
 
-    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const admin = getSupabaseAdmin();
 
     const { data: otpRow, error: fetchErr } = await admin
       .from('otp_codes')
@@ -53,7 +46,7 @@ Deno.serve(async (req) => {
     if (new Date(otpRow.expires_at) < new Date()) return json({ error: 'This code has expired. Request a new one.' });
     if (otpRow.attempts >= MAX_ATTEMPTS) return json({ error: 'Too many incorrect attempts. Request a new code.' });
 
-    const codeHash = await sha256Hex(code);
+    const codeHash = hashCode(code);
     if (codeHash !== otpRow.code_hash) {
       await admin.from('otp_codes').update({ attempts: otpRow.attempts + 1 }).eq('id', otpRow.id);
       return json({ error: 'Incorrect code.' });
@@ -64,7 +57,7 @@ Deno.serve(async (req) => {
     const isSignup = purpose === 'signup';
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink(
       isSignup
-        ? { type: 'signup', email, password: crypto.randomUUID() } // throwaway — this account only ever signs in via OTP
+        ? { type: 'signup', email, password: randomUUID() } // throwaway — this account only ever signs in via OTP
         : { type: 'magiclink', email }
     );
     if (linkErr) throw linkErr;
@@ -76,4 +69,4 @@ Deno.serve(async (req) => {
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
   }
-});
+};

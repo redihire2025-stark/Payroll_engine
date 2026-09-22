@@ -5,6 +5,10 @@
 [build.environment]
   NODE_VERSION = "22"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 # SPA fallback — client-side routing (react-router-dom) needs every path to
 # resolve to index.html; without this, a hard refresh on e.g. /admin/employees
 # 404s at the CDN edge instead of reaching the app.

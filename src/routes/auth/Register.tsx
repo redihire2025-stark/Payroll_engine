@@ -7,6 +7,7 @@ import { OrgLogo } from '@/shared/ui/OrgLogo';
 import { CheckIcon } from '@/shared/ui/icons';
 import { useSession, type SessionUser } from '@/shared/lib/session';
 import { supabase } from '@/shared/lib/supabaseClient';
+import { callNetlifyFunction } from '@/shared/lib/netlifyFunctions';
 import { requestSignupOtp, verifyOtp } from '@/modules/identity/authService';
 import { sendWelcomeEmail } from '@/modules/notifications/notificationService';
 
@@ -71,11 +72,14 @@ export default function Register() {
         if (uploadErr) throw new Error(`Logo upload failed: ${uploadErr.message}`);
       }
 
-      const { data, error: fnError } = await supabase.functions.invoke('register-company', {
-        body: { userId, orgName, legalName: legalName || orgName, country: 'IN', logoStoragePath },
+      const data = await callNetlifyFunction<{ companyId: string; companyName: string }>('register-company', {
+        userId,
+        orgName,
+        legalName: legalName || orgName,
+        country: 'IN',
+        logoStoragePath,
       });
-      if (fnError) throw fnError;
-      setCreatedCompanyId(data?.companyId ?? null);
+      setCreatedCompanyId(data.companyId);
 
       const companyLogoUrl = logoStoragePath
         ? supabase.storage.from('company-logos').getPublicUrl(logoStoragePath).data.publicUrl

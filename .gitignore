@@ -9,3 +9,4 @@ ios
 .DS_Store
 coverage
 *.tsbuildinfo
+.netlify

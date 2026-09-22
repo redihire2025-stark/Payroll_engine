@@ -1,23 +1,19 @@
 // Self-service company registration — see docs/architecture/16-self-service-onboarding.md.
-//
-// Runs with the service role (SUPABASE_SERVICE_ROLE_KEY, auto-provided by
-// the Edge Runtime) because creating a company + its default settings +
-// granting the registrant `company_owner` is a multi-table sequence that
-// must either all succeed or all fail — never left half-done, and never
-// something the anon-key client is allowed to do directly under RLS.
-//
-// Deploy: supabase functions deploy register-company
-// Called from: src/routes/auth/Register.tsx, after the registrant has
-// already verified their email OTP (so `userId` is a real, authenticated
+// Runs with the Supabase service role because creating a company + its
+// default settings + granting the registrant company_owner is a
+// multi-table sequence that must either all succeed or all fail.
+// Called from src/routes/auth/Register.tsx after the registrant has
+// already verified their email OTP (so userId is a real, authenticated
 // auth.users id — this function trusts it because Supabase's own auth
 // layer, not this function, established that identity).
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import { corsHeaders } from '../_shared/cors.ts';
+import type { Handler } from '@netlify/functions';
+import { getSupabaseAdmin } from './_shared/supabaseAdmin';
+import { json } from './_shared/http';
 
 interface RegisterCompanyRequest {
-  userId: string;
-  orgName: string;
+  userId?: string;
+  orgName?: string;
   legalName?: string;
   country?: string;
   logoStoragePath?: string; // path inside the public `company-logos` bucket, if one was uploaded
@@ -31,26 +27,20 @@ function slugify(name: string): string {
     .slice(0, 60);
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+export const handler: Handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') return json({ ok: true });
+  if (event.httpMethod !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   try {
-    const body = (await req.json()) as RegisterCompanyRequest;
+    const body = JSON.parse(event.body || '{}') as RegisterCompanyRequest;
     if (!body.userId || !body.orgName) {
-      return new Response(JSON.stringify({ error: 'userId and orgName are required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'userId and orgName are required' });
     }
 
-    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const admin = getSupabaseAdmin();
 
     const { data: authUser, error: authErr } = await admin.auth.admin.getUserById(body.userId);
-    if (authErr || !authUser?.user) {
-      throw new Error(authErr?.message ?? 'Authenticated user not found');
-    }
+    if (authErr || !authUser?.user) throw new Error(authErr?.message ?? 'Authenticated user not found');
 
     const { error: platformUserErr } = await admin
       .from('platform_users')
@@ -82,13 +72,8 @@ Deno.serve(async (req) => {
       .insert({ user_id: body.userId, company_id: company.id, role: 'company_owner' });
     if (roleErr) throw roleErr;
 
-    return new Response(JSON.stringify({ companyId: company.id, companyName: company.name }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return json({ companyId: company.id, companyName: company.name });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'Unknown error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
   }
-});
+};

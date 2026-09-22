@@ -8,13 +8,21 @@
 | Auth | Email/password now; Google/Microsoft/MFA/SSO later (same `auth.users` table, no migration needed) |
 | Storage | Private buckets for documents/payslips; signed URLs only |
 | RLS | Primary tenant-isolation + authorization enforcement layer |
-| Edge Functions (Deno) | Privileged/service-role operations that must not run with the caller's RLS-scoped key: payroll lock, PDF generation trigger, cross-tenant platform-admin actions, webhook receivers |
+| Privileged operations | **Netlify Functions**, not Supabase Edge Functions (revised — see note below): payroll lock, PDF generation trigger, cross-tenant platform-admin actions, webhook receivers |
 | Database Functions/Triggers | `updated_at` maintenance, `audit_logs` capture, leave-balance recalculation, payroll state-transition guards |
 
 No separate backend server. The React app talks to Postgres via `supabase-js`
-(anon key, RLS-scoped) for all normal CRUD. Edge Functions are called only for the
-narrow set of operations listed above, using the **service role key**, which lives
-only in Edge Function environment variables — **never** shipped to the client.
+(anon key, RLS-scoped) for all normal CRUD. Privileged operations run as
+**Netlify Functions** (`netlify/functions/`, deployed alongside the frontend on
+the same domain — no CORS, and secrets live in Netlify's own environment
+variables, not Supabase's), using the Supabase **service role key**, which lives
+only in a Netlify environment variable (`SUPABASE_SERVICE_ROLE_KEY`) —
+**never** shipped to the client. This revises the original Phase 0 design,
+which assumed Supabase Edge Functions for this role; see
+[17-supabase-resend-setup.md](./17-supabase-resend-setup.md) for why (in
+short: same-origin avoids a class of CORS failures entirely, and keeping
+every secret — Supabase service role *and* Resend — in one place, Netlify,
+is simpler to operate than splitting secrets across two providers).
 
 ## 6.2 Multi-Tenancy Model
 
@@ -29,26 +37,38 @@ only in Edge Function environment variables — **never** shipped to the client.
   used only in the Platform console, and every such access is written to
   `audit_logs`.
 
-## 6.3 Edge Functions (initial set)
+## 6.3 Privileged Functions (Netlify Functions, not Supabase Edge Functions)
 
 ```
-edge-functions/
-  payroll-calculate/     Runs the calculation pipeline for a payroll_run
-                          (service role — writes payroll_items/earnings/deductions,
-                          never trusts client-computed numbers)
-  payroll-lock/          Transitions a run to LOCKED after approval checks;
-                          rejects if approval_requests for the run isn't APPROVED
-  payslip-generate/      Renders payslip PDF (from locked payroll_items),
-                          stores to Storage, writes payslips row
-  send-notification/     Fan-out for email + in-app notification on key events
-                          (leave decision, payslip ready, approval pending)
-  attendance-verify/     (Phase 3+) server-side sanity check on punch
-                          timestamp/geolocation vs. company policy before
+netlify/functions/
+  register-company/      Self-service org signup — creates platform_users/
+                          companies/company_settings/user_company_roles as
+                          one atomic sequence (service role)
+  send-otp/               Generates + emails the custom login/signup OTP
+                          (service role for otp_codes; Resend for delivery)
+  verify-otp/              Checks the OTP, mints a real Supabase Auth session
+                          via the admin API (service role)
+  send-notification/      Payslip-ready / leave-decision / welcome emails (Resend)
+  payroll-calculate/      (not yet built) Runs the calculation pipeline for a
+                          payroll_run — service role, writes payroll_items/
+                          earnings/deductions, never trusts client-computed numbers
+  payroll-lock/           (not yet built) Transitions a run to LOCKED after
+                          approval checks; rejects if approval isn't recorded
+  payslip-generate/       (not yet built) Renders payslip PDF from locked
+                          payroll_items, stores to Storage, writes payslips row
+  attendance-verify/      (not yet built, Phase 3+) server-side sanity check on
+                          punch timestamp/geolocation vs. company policy before
                           accepting a mobile punch as authoritative
 ```
 
+The four built functions live in `netlify/functions/` and are documented in
+detail in [17-supabase-resend-setup.md](./17-supabase-resend-setup.md). Every
+future privileged operation follows the same pattern (Netlify Function,
+Supabase service role via `SUPABASE_SERVICE_ROLE_KEY`), not Supabase Edge
+Functions, for consistency — one deploy target, one place secrets live.
+
 Rule: **any calculation or state transition that must be trustworthy (payroll math,
-locking, statutory numbers) runs server-side in an Edge Function or a Postgres
+locking, statutory numbers) runs server-side in a Netlify Function or a Postgres
 function — never solely in the browser.** The browser may show a *preview*
 calculation for UX, but the persisted numbers always come from the server-side run.
 
@@ -71,14 +91,16 @@ by the `documents` service, never cached long-term client-side).
   tenants are logical rows inside one project, per the multi-tenancy model above).
 - Migrations tracked with the Supabase CLI (`supabase/migrations/*.sql`), applied
   through CI, never hand-run against `prod`.
-- Secrets (`service_role` key, SMTP creds, etc.) live in Supabase project secrets /
-  Netlify environment variables — never committed to the repo.
+- Secrets (`SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, etc.) live in Netlify
+  environment variables (the one place privileged functions run) — never
+  committed to the repo, and never `VITE_`-prefixed (which would bundle them
+  into client-side JavaScript).
 
 ## 6.6 Future Extraction Points (not built now, designed for)
 
 - If a workload needs heavy background processing (bulk statutory report
   generation, large imports), it can move to a Google Cloud Function/Cloud Run
-  worker triggered by a Postgres `NOTIFY`/webhook from an Edge Function — the
+  worker triggered by a Postgres `NOTIFY`/webhook from a Netlify Function — the
   service-layer contract (`payrollService.calculate()`, etc.) doesn't change, only
   what's behind it.
 - If caching/rate-limiting is later needed, Redis can sit in front of Edge Functions

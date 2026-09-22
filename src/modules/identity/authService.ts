@@ -1,42 +1,32 @@
 import { supabase } from '@/shared/lib/supabaseClient';
+import { callNetlifyFunction } from '@/shared/lib/netlifyFunctions';
 import type { Role } from '@/shared/lib/session';
 
 /**
- * Custom OTP — generated, stored (hashed) and emailed by our own Edge
- * Functions (send-otp / verify-otp) via Resend from support@rhirepro.com,
- * not by Supabase Auth's own mailer. verify-otp still mints a real
- * Supabase Auth session under the hood (via the admin API's generateLink +
- * this client calling supabase.auth.verifyOtp with the resulting
- * token_hash) — so RLS, auth.uid() and getMyCompanyRoles below are
- * unaffected by where the OTP itself came from. See
- * docs/architecture/17-supabase-resend-setup.md.
+ * Custom OTP — generated, stored (hashed) and emailed by Netlify Functions
+ * (send-otp / verify-otp) via Resend from support@rhirepro.com, not by
+ * Supabase Auth's own mailer. verify-otp still mints a real Supabase Auth
+ * session under the hood (via the admin API's generateLink + this client
+ * calling supabase.auth.verifyOtp with the resulting token_hash) — so RLS,
+ * auth.uid() and getMyCompanyRoles below are unaffected by where the OTP
+ * itself came from. See docs/architecture/17-supabase-resend-setup.md.
  */
-
-async function callFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke(name, { body });
-  if (error) throw new Error(error.message ?? `${name} request failed`);
-  if (data && typeof data === 'object' && 'error' in data && (data as { error?: unknown }).error) {
-    throw new Error(String((data as { error: unknown }).error));
-  }
-  return data as T;
-}
 
 /** Login: only an email that already has a role granted by an admin can request a code. */
 export async function requestLoginOtp(email: string): Promise<void> {
-  await callFunction('send-otp', { email, purpose: 'login' });
+  await callNetlifyFunction('send-otp', { email, purpose: 'login' });
 }
 
 /** Registration: any email can start signup; the auth user is created on first successful verification. */
 export async function requestSignupOtp(email: string): Promise<void> {
-  await callFunction('send-otp', { email, purpose: 'signup' });
+  await callNetlifyFunction('send-otp', { email, purpose: 'signup' });
 }
 
 export async function verifyOtp(email: string, code: string, purpose: 'login' | 'signup') {
-  const { tokenHash, verifyType } = await callFunction<{ tokenHash: string; verifyType: 'signup' | 'magiclink' }>('verify-otp', {
-    email,
-    code,
-    purpose,
-  });
+  const { tokenHash, verifyType } = await callNetlifyFunction<{ tokenHash: string; verifyType: 'signup' | 'magiclink' }>(
+    'verify-otp',
+    { email, code, purpose }
+  );
   const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: verifyType });
   if (error) throw error;
   return data.session;

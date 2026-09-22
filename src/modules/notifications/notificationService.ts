@@ -1,10 +1,7 @@
-import { supabase } from '@/shared/lib/supabaseClient';
+import { callNetlifyFunction } from '@/shared/lib/netlifyFunctions';
 
 async function send(to: string | string[], subject: string, html: string): Promise<void> {
-  const { error } = await supabase.functions.invoke('send-notification', {
-    body: { to, subject, html },
-  });
-  if (error) throw error;
+  await callNetlifyFunction('send-notification', { to, subject, html });
 }
 
 export async function sendWelcomeEmail(to: string, companyName: string): Promise<void> {
