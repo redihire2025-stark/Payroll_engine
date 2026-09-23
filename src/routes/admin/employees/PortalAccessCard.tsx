@@ -3,18 +3,29 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader } from '@/shared/ui/Card';
 import { Badge } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
-import { Field, Input } from '@/shared/ui/Input';
+import { Field, Input, Select } from '@/shared/ui/Input';
 import { grantPortalAccess, revokePortalAccess } from '@/modules/employee/employeeService';
 import type { EmployeeDetailRecord } from '@/modules/employee/employeeService';
+import type { Role } from '@/shared/lib/session';
+
+const GRANTABLE_ROLES: Role[] = [
+  'employee', 'manager', 'hr_admin', 'payroll_admin', 'finance', 'recruiter', 'performance_admin', 'company_admin',
+];
+const ROLE_LABELS: Record<Role, string> = {
+  employee: 'Employee', manager: 'Manager', hr_admin: 'HR Admin', payroll_admin: 'Payroll Admin',
+  finance: 'Finance', recruiter: 'Recruiter', performance_admin: 'Performance Admin',
+  company_admin: 'Company Admin', company_owner: 'Company Owner',
+};
 
 export function PortalAccessCard({ employee }: { employee: EmployeeDetailRecord }) {
   const queryClient = useQueryClient();
   const [granting, setGranting] = useState(false);
   const [email, setEmail] = useState(employee.personalEmail ?? '');
+  const [role, setRole] = useState<Role>('employee');
   const [error, setError] = useState<string | null>(null);
 
   const grantMutation = useMutation({
-    mutationFn: () => grantPortalAccess(employee.id, email.trim()),
+    mutationFn: () => grantPortalAccess(employee.id, email.trim(), role),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employee', employee.id] });
       setGranting(false);
@@ -59,6 +70,11 @@ export function PortalAccessCard({ employee }: { employee: EmployeeDetailRecord 
           >
             <Field label="Login email" hint="They'll sign in with a one-time code sent to this address">
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </Field>
+            <Field label="Role" hint="Governs which console they land on and what they can access">
+              <Select value={role} onChange={(e) => setRole(e.target.value as Role)}>
+                {GRANTABLE_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+              </Select>
             </Field>
             {error && <p className="text-[12px] text-danger">{error}</p>}
             <div className="flex justify-end gap-2">

@@ -2,9 +2,11 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { supabase } from './supabaseClient';
 import { getMyCompanyRoles } from '@/modules/identity/authService';
 
-export type Role = 'company_owner' | 'company_admin' | 'hr_admin' | 'payroll_admin' | 'finance' | 'manager' | 'employee';
+export type Role =
+  | 'company_owner' | 'company_admin' | 'hr_admin' | 'payroll_admin' | 'finance'
+  | 'manager' | 'recruiter' | 'performance_admin' | 'employee';
 
-const ADMIN_CONSOLE_ROLES: Role[] = ['company_owner', 'company_admin', 'hr_admin', 'payroll_admin', 'finance'];
+const ADMIN_CONSOLE_ROLES: Role[] = ['company_owner', 'company_admin', 'hr_admin', 'payroll_admin', 'finance', 'recruiter', 'performance_admin'];
 
 export interface SessionUser {
   id: string;
