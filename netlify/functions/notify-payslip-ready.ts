@@ -31,7 +31,7 @@ export const handler: Handler = async (event) => {
     const { data: payslip, error: payslipErr } = await admin
       .from('payslips')
       .select(
-        'payroll_items(employee_id, employees(first_name, last_name, personal_email, auth_user_id), payroll_runs(company_id, period_start, period_end))',
+        'payroll_items(employee_id, employees(auth_user_id, employee_profiles(first_name, last_name, personal_email)), payroll_runs(company_id, period_start, period_end))',
       )
       .eq('id', payslipId)
       .single();
@@ -39,12 +39,18 @@ export const handler: Handler = async (event) => {
 
     const item = payslip.payroll_items as unknown as {
       employee_id: string;
-      employees: { first_name: string; last_name: string | null; personal_email: string | null; auth_user_id: string | null } | null;
+      employees: { auth_user_id: string | null; employee_profiles: { first_name: string; last_name: string | null; personal_email: string | null } | null } | null;
       payroll_runs: { company_id: string; period_start: string; period_end: string } | null;
     } | null;
     const companyId = item?.payroll_runs?.company_id;
-    const employee = item?.employees;
-    if (!item || !companyId || !employee) throw new Error('Payslip is not linked to a valid payroll run.');
+    const employeeRow = item?.employees;
+    if (!item || !companyId || !employeeRow) throw new Error('Payslip is not linked to a valid payroll run.');
+    const employee = {
+      auth_user_id: employeeRow.auth_user_id,
+      first_name: employeeRow.employee_profiles?.first_name ?? '',
+      last_name: employeeRow.employee_profiles?.last_name ?? null,
+      personal_email: employeeRow.employee_profiles?.personal_email ?? null,
+    };
 
     const { data: roleRows, error: roleErr } = await admin
       .from('user_company_roles')

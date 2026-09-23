@@ -32,19 +32,26 @@ export const handler: Handler = async (event) => {
 
     const { data: request, error: reqErr } = await admin
       .from('leave_requests')
-      .select('company_id, start_date, end_date, leave_types(name), employees(first_name, last_name, personal_email, auth_user_id, manager_id)')
+      .select(
+        'company_id, start_date, end_date, leave_types(name), employees(auth_user_id, manager_id, employee_profiles(first_name, last_name, personal_email))',
+      )
       .eq('id', leaveRequestId)
       .single();
     if (reqErr || !request) throw new Error(reqErr?.message ?? 'Leave request not found.');
 
-    const employee = request.employees as unknown as {
-      first_name: string;
-      last_name: string | null;
-      personal_email: string | null;
+    const employeeRow = request.employees as unknown as {
       auth_user_id: string | null;
       manager_id: string | null;
+      employee_profiles: { first_name: string; last_name: string | null; personal_email: string | null } | null;
     } | null;
-    if (!employee) throw new Error('Leave request has no linked employee.');
+    if (!employeeRow) throw new Error('Leave request has no linked employee.');
+    const employee = {
+      auth_user_id: employeeRow.auth_user_id,
+      manager_id: employeeRow.manager_id,
+      first_name: employeeRow.employee_profiles?.first_name ?? '',
+      last_name: employeeRow.employee_profiles?.last_name ?? null,
+      personal_email: employeeRow.employee_profiles?.personal_email ?? null,
+    };
 
     const { data: roleRows, error: roleErr } = await admin
       .from('user_company_roles')
