@@ -9,6 +9,11 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+# Runs once a day (UTC) to mark absent any shift-assigned employee who
+# never punched in the previous day — see detect-missing-punches.ts.
+[functions."detect-missing-punches"]
+  schedule = "@daily"
+
 # SPA fallback — client-side routing (react-router-dom) needs every path to
 # resolve to index.html; without this, a hard refresh on e.g. /admin/employees
 # 404s at the CDN edge instead of reaching the app.

@@ -15,6 +15,7 @@ import { calculatePayrollItem } from './engine/pipeline';
 import type { PayrollCalculationInput, RuleConfig, SalaryComponentInput } from './engine/types';
 import { getVerifiedExemptionsTotal } from '@/modules/tax/taxService';
 import { financialYearFor } from '@/modules/tax/financialYear';
+import { runAsJob } from '@/modules/jobs/jobService';
 
 // Sensible Indian statutory defaults, used whenever a company hasn't
 // configured its own payroll_rule_sets yet — a run should never silently
@@ -136,8 +137,12 @@ export interface ExecuteResult {
   skipped: { employeeId: string; reason: string }[];
 }
 
-/** Runs the full calculation pipeline for every eligible employee and writes the results. Moves draft/calculating -> calculated. */
+/** Runs the full calculation pipeline for every eligible employee and writes the results. Moves draft/calculating -> calculated. Tracked as a background_jobs row so a failed/slow run is admin-visible rather than an opaque browser-side promise. */
 export async function executePayrollRun(runId: string, companyId: string, calculatedBy: string): Promise<ExecuteResult> {
+  return runAsJob(companyId, 'payroll_run', { runId }, () => executePayrollRunInner(runId, companyId, calculatedBy));
+}
+
+async function executePayrollRunInner(runId: string, companyId: string, calculatedBy: string): Promise<ExecuteResult> {
   const { data: run, error: runErr } = await supabase.from('payroll_runs').select('period_start, period_end, status').eq('id', runId).single();
   if (runErr) throw runErr;
   if (run.status !== 'draft') throw new Error(`Cannot run a payroll already in "${run.status}" status.`);

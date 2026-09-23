@@ -1,11 +1,43 @@
 import { useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader } from '@/shared/ui/Card';
+import { Badge, type BadgeTone } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
 import { Field, Input, Select } from '@/shared/ui/Input';
-import { ErrorState } from '@/shared/ui/EmptyState';
+import { EmptyState, ErrorState, LoadingRows } from '@/shared/ui/EmptyState';
+import { ClockIcon } from '@/shared/ui/icons';
 import { useSession } from '@/shared/lib/session';
 import { getCompanySettings, updateCompanySettings, type CompanySettingsRow } from '@/modules/company/companyService';
+import { listJobs, type BackgroundJobRow } from '@/modules/jobs/jobService';
+
+const jobStatusTone: Record<BackgroundJobRow['status'], BadgeTone> = { running: 'info', succeeded: 'success', failed: 'danger' };
+
+function JobHistoryCard({ companyId }: { companyId: string }) {
+  const { data, isLoading, error } = useQuery({ queryKey: ['background-jobs', companyId], queryFn: () => listJobs(companyId) });
+  return (
+    <Card>
+      <CardHeader title="Job History" subtitle="Payroll runs, payslip generation, and scheduled attendance checks" />
+      {error && <div className="px-5 pb-4"><ErrorState message={(error as Error).message} /></div>}
+      {isLoading ? (
+        <LoadingRows />
+      ) : (data ?? []).length === 0 ? (
+        <div className="px-5 pb-6 pt-2">
+          <EmptyState icon={<ClockIcon width={20} height={20} />} title="No jobs yet" description="Background job runs will appear here." />
+        </div>
+      ) : (
+        (data ?? []).map((j) => (
+          <div key={j.id} className="flex items-center justify-between border-b border-border-soft px-5 py-3 text-[13px] last:border-b-0">
+            <div>
+              <div className="font-medium text-text capitalize">{j.jobType.replace(/_/g, ' ')}</div>
+              <div className="text-[11px] text-text-faint">{new Date(j.startedAt).toLocaleString()}{j.error ? ` — ${j.error}` : ''}</div>
+            </div>
+            <Badge tone={jobStatusTone[j.status]}>{j.status}</Badge>
+          </div>
+        ))
+      )}
+    </Card>
+  );
+}
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -100,6 +132,8 @@ export default function Settings() {
           </div>
         </Card>
       </form>
+
+      <JobHistoryCard companyId={companyId} />
     </div>
   );
 }

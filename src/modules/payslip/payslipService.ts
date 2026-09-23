@@ -2,14 +2,19 @@ import { supabase } from '@/shared/lib/supabaseClient';
 import { callNetlifyFunction } from '@/shared/lib/netlifyFunctions';
 import { buildPayslipPdf } from './generatePayslipPdf';
 import { sendPayslipReadyEmail } from '@/modules/notifications/notificationService';
+import { runAsJob } from '@/modules/jobs/jobService';
 
 export interface GeneratePayslipsResult {
   generated: number;
   alreadyExisted: number;
 }
 
-/** Idempotent — skips any payroll_item that already has a payslips row rather than overwriting it. */
+/** Idempotent — skips any payroll_item that already has a payslips row rather than overwriting it. Tracked as a background_jobs row. */
 export async function generatePayslipsForRun(runId: string, companyId: string): Promise<GeneratePayslipsResult> {
+  return runAsJob(companyId, 'payslip_generation', { runId }, () => generatePayslipsForRunInner(runId, companyId));
+}
+
+async function generatePayslipsForRunInner(runId: string, companyId: string): Promise<GeneratePayslipsResult> {
   const { data: run, error: runErr } = await supabase.from('payroll_runs').select('period_start, period_end, status').eq('id', runId).single();
   if (runErr) throw runErr;
   if (!['locked', 'paid'].includes(run.status)) {
