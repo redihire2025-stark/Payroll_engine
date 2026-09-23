@@ -4,6 +4,7 @@ import { Badge } from '@/shared/ui/Badge';
 import { EmptyState, ErrorState, LoadingRows } from '@/shared/ui/EmptyState';
 import { CalendarIcon } from '@/shared/ui/icons';
 import { useSession } from '@/shared/lib/session';
+import { leaveStyle } from '@/shared/lib/leaveStyle';
 import { listMyLeaveBalances, listMyLeaveRequests, listLeaveTypes, createLeaveRequest } from '@/modules/leave/leaveService';
 import { listHolidays } from '@/modules/company/holidayService';
 
@@ -61,6 +62,9 @@ export default function EssLeave() {
     onError: (err) => setApplyError(err instanceof Error ? err.message : 'Could not submit that request.'),
   });
 
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const upcomingHolidaysCount = (holidaysQuery.data ?? []).filter((h) => h.date >= todayIso).length;
+
   return (
     <div className="flex flex-col gap-4 px-5 pt-6">
       <div className="text-[19px] font-bold text-text">Leave</div>
@@ -70,9 +74,14 @@ export default function EssLeave() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`border-b-2 px-3 pb-2.5 text-[13px] font-semibold ${tab === t ? 'border-accent text-accent' : 'border-transparent text-text-faint'}`}
+            className={`flex items-center gap-1.5 border-b-2 px-3 pb-2.5 text-[13px] font-semibold ${tab === t ? 'border-accent text-accent' : 'border-transparent text-text-faint'}`}
           >
             {t}
+            {t === 'Holidays' && upcomingHolidaysCount > 0 && (
+              <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${tab === t ? 'bg-accent-soft text-accent' : 'bg-border-soft text-text-faint'}`}>
+                {upcomingHolidaysCount}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -85,16 +94,20 @@ export default function EssLeave() {
           ) : (balancesQuery.data?.length ?? 0) === 0 ? (
             <EmptyState icon={<CalendarIcon width={20} height={20} />} title="No leave balances yet" description="Leave balances appear once your admin configures leave policies for your company." />
           ) : (
-            <div className="flex flex-col gap-3">
-              {(balancesQuery.data ?? []).map((lt) => (
-                <div key={lt.leaveTypeId} className="rounded-xl border border-border bg-surface p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] font-semibold text-text">{lt.name}</span>
-                    <span className="font-mono-num text-[13px] text-text-muted">{lt.closing}</span>
+            <div className="grid grid-cols-2 gap-3">
+              {(balancesQuery.data ?? []).map((lt) => {
+                const style = leaveStyle(lt.name);
+                return (
+                  <div key={lt.leaveTypeId} className="rounded-xl border border-border bg-surface p-4">
+                    <div className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${style.chip} ${style.text}`}>
+                      <CalendarIcon width={16} height={16} />
+                    </div>
+                    <div className="mt-2.5 font-mono-num text-[22px] font-bold leading-none text-text">{lt.closing}</div>
+                    <div className="mt-1 text-[11.5px] font-semibold text-text">{lt.name}</div>
+                    <div className="mt-0.5 text-[10.5px] text-text-faint">{lt.used} used this year</div>
                   </div>
-                  <div className="mt-1.5 text-[11px] text-text-faint">{lt.used} used this year</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
@@ -162,7 +175,7 @@ export default function EssLeave() {
               {applySuccess && <p className="text-[12px] text-success">Request submitted.</p>}
               <button
                 type="submit"
-                className="rounded-lg bg-accent py-3 text-[13px] font-bold text-white disabled:opacity-50"
+                className="rounded-lg bg-accent py-3 text-[13px] font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-50"
                 disabled={applyMutation.isPending || !applyForm.leaveTypeId || !applyForm.startDate || !applyForm.endDate}
               >
                 {applyMutation.isPending ? 'Submitting…' : 'Submit Request'}
@@ -181,16 +194,24 @@ export default function EssLeave() {
             <EmptyState title="No leave requests yet" description="Requests you submit will show up here with their status." />
           ) : (
             <div className="flex flex-col gap-3">
-              {(historyQuery.data ?? []).map((l) => (
-                <div key={l.id} className="rounded-xl border border-border bg-surface p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] font-semibold text-text">{l.leaveType}</span>
-                    <Badge tone={l.status === 'approved' ? 'success' : l.status === 'pending' ? 'warning' : 'danger'}>{l.status}</Badge>
+              {(historyQuery.data ?? []).map((l) => {
+                const style = leaveStyle(l.leaveType);
+                return (
+                  <div key={l.id} className="rounded-xl border border-border bg-surface p-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${style.chip} ${style.text}`}>
+                        <CalendarIcon width={15} height={15} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[13px] font-semibold text-text">{l.leaveType}</div>
+                        <div className="text-[11.5px] text-text-faint">{l.startDate} – {l.endDate} · {l.days} day(s)</div>
+                      </div>
+                      <Badge tone={l.status === 'approved' ? 'success' : l.status === 'pending' ? 'warning' : 'danger'}>{l.status}</Badge>
+                    </div>
+                    {l.reason && <div className="mt-2 text-[11.5px] text-text-faint">{l.reason}</div>}
                   </div>
-                  <div className="mt-1 text-[12px] text-text-muted">{l.startDate} – {l.endDate} · {l.days} day(s)</div>
-                  {l.reason && <div className="mt-1 text-[11.5px] text-text-faint">{l.reason}</div>}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
@@ -206,13 +227,17 @@ export default function EssLeave() {
           ) : (
             <div className="flex flex-col gap-2">
               {(holidaysQuery.data ?? []).map((h) => {
-                const isPast = h.date < new Date().toISOString().slice(0, 10);
+                const isPast = h.date < todayIso;
                 return (
-                  <div key={h.id} className={`flex items-center justify-between rounded-xl border border-border bg-surface p-3.5 ${isPast ? 'opacity-50' : ''}`}>
-                    <div>
+                  <div key={h.id} className={`flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 ${isPast ? 'opacity-50' : ''}`}>
+                    <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-accent-soft text-accent">
+                      <div className="text-[13px] font-bold leading-none">{new Date(`${h.date}T00:00:00`).getDate()}</div>
+                      <div className="text-[8.5px] font-semibold uppercase leading-none">{new Date(`${h.date}T00:00:00`).toLocaleDateString('en-IN', { month: 'short' })}</div>
+                    </div>
+                    <div className="min-w-0 flex-1">
                       <div className="text-[13px] font-semibold text-text">{h.name}</div>
                       <div className="mt-0.5 text-[11.5px] text-text-faint">
-                        {new Date(h.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        {new Date(`${h.date}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'long' })}
                         {h.branchName && ` · ${h.branchName}`}
                       </div>
                     </div>

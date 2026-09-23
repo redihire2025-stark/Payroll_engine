@@ -113,7 +113,9 @@ function ExpensesPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      <button onClick={() => setClaiming(true)} className="self-start text-[12.5px] font-semibold text-accent">+ New Claim</button>
+      <button onClick={() => setClaiming(true)} className="self-start rounded-lg bg-accent px-4 py-2 text-[12.5px] font-semibold text-white transition-transform active:scale-95">
+        + New Claim
+      </button>
       {listError && <ErrorState message={(listError as Error).message} />}
       {isLoading ? (
         <LoadingRows />
@@ -122,12 +124,15 @@ function ExpensesPanel() {
       ) : (
         <div className="flex flex-col gap-2.5">
           {claims.map((c) => (
-            <div key={c.id} className="rounded-xl border border-border bg-surface p-4">
-              <div className="flex items-center justify-between">
-                <span className="font-mono-num text-[15px] font-bold text-text">{formatINR(c.totalAmount)}</span>
-                <Badge tone={statusTone[c.status]}>{c.status}</Badge>
+            <div key={c.id} className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
+                <ReceiptIcon width={17} height={17} />
               </div>
-              <div className="mt-0.5 text-[11px] text-text-faint">{c.createdAt.slice(0, 10)}</div>
+              <div className="min-w-0 flex-1">
+                <span className="font-mono-num text-[15px] font-bold text-text">{formatINR(c.totalAmount)}</span>
+                <div className="mt-0.5 text-[11px] text-text-faint">{c.createdAt.slice(0, 10)}</div>
+              </div>
+              <Badge tone={statusTone[c.status]}>{c.status}</Badge>
             </div>
           ))}
         </div>
@@ -235,7 +240,9 @@ function LoansPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      <button onClick={() => setRequesting(true)} className="self-start text-[12.5px] font-semibold text-accent">+ Request Loan</button>
+      <button onClick={() => setRequesting(true)} className="self-start rounded-lg bg-accent px-4 py-2 text-[12.5px] font-semibold text-white transition-transform active:scale-95">
+        + Request Loan
+      </button>
       {listError && <ErrorState message={(listError as Error).message} />}
       {isLoading ? (
         <LoadingRows />
@@ -245,11 +252,16 @@ function LoansPanel() {
         <div className="flex flex-col gap-2.5">
           {loans.map((l) => (
             <button key={l.id} onClick={() => setExpandedId(expandedId === l.id ? null : l.id)} className="w-full rounded-xl border border-border bg-surface p-4 text-left">
-              <div className="flex items-center justify-between">
-                <span className="font-mono-num text-[15px] font-bold text-text">{formatINR(l.principalAmount)}</span>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
+                  <BanknoteIcon width={17} height={17} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="font-mono-num text-[15px] font-bold text-text">{formatINR(l.principalAmount)}</span>
+                  <div className="mt-0.5 text-[11px] text-text-faint">{l.tenureMonths} months{l.status === 'approved' ? ` · ${formatINR(l.outstanding)} outstanding` : ''}</div>
+                </div>
                 <Badge tone={statusTone[l.status as keyof typeof statusTone] ?? 'warning'}>{l.status}</Badge>
               </div>
-              <div className="mt-0.5 text-[11px] text-text-faint">{l.tenureMonths} months{l.status === 'approved' ? ` · ${formatINR(l.outstanding)} outstanding` : ''}</div>
               {expandedId === l.id && l.status === 'approved' && <LoanSchedule loanId={l.id} />}
             </button>
           ))}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon } from '@/shared/ui/icons';
 import { EmptyState, ErrorState, LoadingRows } from '@/shared/ui/EmptyState';
-import { Badge } from '@/shared/ui/Badge';
+import { Badge, type BadgeTone } from '@/shared/ui/Badge';
 import { useSession } from '@/shared/lib/session';
 import { listMyAttendance, listMyCorrections, createCorrection } from '@/modules/attendance/attendanceService';
 
@@ -12,11 +12,23 @@ function monthBounds(date: Date) {
   return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
 }
 
+const STATUS_TONE: Record<string, BadgeTone> = {
+  present: 'success',
+  late: 'warning',
+  half_day: 'warning',
+  absent: 'danger',
+};
+
 const tabs = ['History', 'Corrections'] as const;
 
 export default function EssAttendance() {
   const { user } = useSession();
-  const { start, end } = monthBounds(new Date());
+  const [monthOffset, setMonthOffset] = useState(0);
+  const viewedMonth = new Date();
+  viewedMonth.setDate(1);
+  viewedMonth.setMonth(viewedMonth.getMonth() + monthOffset);
+  const { start, end } = monthBounds(viewedMonth);
+  const isCurrentMonth = monthOffset === 0;
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<(typeof tabs)[number]>('History');
   const [requesting, setRequesting] = useState(false);
@@ -53,6 +65,9 @@ export default function EssAttendance() {
   });
 
   const days = data ?? [];
+  const presentCount = days.filter((d) => d.status === 'present' || d.status === 'late').length;
+  const absentCount = days.filter((d) => d.status === 'absent').length;
+  const lateCount = days.filter((d) => d.status === 'late').length;
 
   return (
     <div className="flex flex-col gap-4 px-5 pt-6">
@@ -76,10 +91,36 @@ export default function EssAttendance() {
       {tab === 'History' && (
         <>
           <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-2.5">
-            <ChevronLeftIcon width={16} height={16} className="text-text-faint" />
-            <span className="text-[13px] font-semibold text-text">{new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</span>
-            <ChevronRightIcon width={16} height={16} className="text-text-faint" />
+            <button onClick={() => setMonthOffset((m) => m - 1)} className="rounded-lg p-1 hover:bg-bg" aria-label="Previous month">
+              <ChevronLeftIcon width={16} height={16} className="text-text-muted" />
+            </button>
+            <span className="text-[13px] font-semibold text-text">{viewedMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</span>
+            <button
+              onClick={() => setMonthOffset((m) => m + 1)}
+              disabled={isCurrentMonth}
+              className="rounded-lg p-1 hover:bg-bg disabled:opacity-30 disabled:hover:bg-transparent"
+              aria-label="Next month"
+            >
+              <ChevronRightIcon width={16} height={16} className="text-text-muted" />
+            </button>
           </div>
+
+          {!isLoading && days.length > 0 && (
+            <div className="grid grid-cols-3 gap-2.5">
+              <div className="rounded-xl border border-border bg-surface p-3 text-center">
+                <div className="font-mono-num text-[18px] font-bold text-success">{presentCount}</div>
+                <div className="mt-0.5 text-[10.5px] text-text-faint">Present</div>
+              </div>
+              <div className="rounded-xl border border-border bg-surface p-3 text-center">
+                <div className="font-mono-num text-[18px] font-bold text-warning">{lateCount}</div>
+                <div className="mt-0.5 text-[10.5px] text-text-faint">Late</div>
+              </div>
+              <div className="rounded-xl border border-border bg-surface p-3 text-center">
+                <div className="font-mono-num text-[18px] font-bold text-danger">{absentCount}</div>
+                <div className="mt-0.5 text-[10.5px] text-text-faint">Absent</div>
+              </div>
+            </div>
+          )}
 
           {listError && <ErrorState message={(listError as Error).message} />}
 
@@ -92,8 +133,12 @@ export default function EssAttendance() {
               {days.map((d) => (
                 <div key={d.date} className="flex items-center justify-between border-b border-border-soft px-4 py-3 last:border-b-0">
                   <div>
-                    <div className="text-[12.5px] font-medium text-text">{d.date}</div>
-                    <div className="text-[11px] text-text-faint">{d.status}</div>
+                    <div className="text-[12.5px] font-medium text-text">
+                      {new Date(`${d.date}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    </div>
+                    <div className="mt-1">
+                      <Badge tone={STATUS_TONE[d.status] ?? 'neutral'}>{d.status.replace('_', ' ')}</Badge>
+                    </div>
                   </div>
                   <div className="text-right font-mono-num text-[11.5px] text-text-muted">
                     {d.checkIn ? `${d.checkIn} – ${d.checkOut ?? '—'}` : '—'}

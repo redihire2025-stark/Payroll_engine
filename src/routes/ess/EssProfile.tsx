@@ -108,12 +108,12 @@ export default function EssProfile() {
 
   return (
     <div className="flex flex-col gap-4 px-5 pt-6">
-      <div className="flex items-center gap-3.5">
+      <div className="flex items-center gap-3.5 rounded-2xl bg-gradient-to-br from-accent-strong to-accent p-5 text-white shadow-card">
         <Avatar name={user?.name ?? ''} size={56} />
-        <div>
-          <div className="text-[17px] font-bold text-text">{user?.name}</div>
-          <div className="text-[12.5px] text-text-faint">
-            {employee?.code && <span className="font-mono-num font-semibold text-text-muted">{employee.code}</span>}
+        <div className="min-w-0">
+          <div className="truncate text-[17px] font-bold text-white">{user?.name}</div>
+          <div className="mt-0.5 truncate text-[12.5px] text-white/80">
+            {employee?.code && <span className="font-mono-num font-semibold">{employee.code}</span>}
             {employee?.code && (employee?.designation ?? user?.email) && ' · '}
             {employee?.designation ?? user?.email}
           </div>
@@ -138,30 +138,34 @@ export default function EssProfile() {
 
       <div className="rounded-xl border border-border bg-surface">
         {[
-          { icon: FileTextIcon, label: 'Documents', onClick: () => setPanel('documents') },
-          { icon: ShieldIcon, label: 'Tax Declaration', onClick: () => setPanel('tax') },
-          { icon: BellIcon, label: 'Notification Settings', onClick: undefined },
-          { icon: AlertIcon, label: 'Resignation', onClick: () => setPanel('resignation') },
-          { icon: BoxIcon, label: 'My Assets', onClick: () => setPanel('assets') },
-          { icon: HelpCircleIcon, label: 'Helpdesk', onClick: () => setPanel('helpdesk') },
-          { icon: TargetIcon, label: 'Performance', onClick: () => setPanel('performance') },
-          { icon: FileTextIcon, label: 'Letters', onClick: () => setPanel('letters') },
-        ].map(({ icon: Icon, label, onClick }) => (
+          { icon: FileTextIcon, label: 'Documents', onClick: () => setPanel('documents'), chip: 'bg-info-soft text-info' },
+          { icon: ShieldIcon, label: 'Tax Declaration', onClick: () => setPanel('tax'), chip: 'bg-accent-soft text-accent' },
+          { icon: BellIcon, label: 'Notification Settings', onClick: undefined, chip: 'bg-border-soft text-text-muted' },
+          { icon: AlertIcon, label: 'Resignation', onClick: () => setPanel('resignation'), chip: 'bg-danger-soft text-danger' },
+          { icon: BoxIcon, label: 'My Assets', onClick: () => setPanel('assets'), chip: 'bg-warning-soft text-warning' },
+          { icon: HelpCircleIcon, label: 'Helpdesk', onClick: () => setPanel('helpdesk'), chip: 'bg-info-soft text-info' },
+          { icon: TargetIcon, label: 'Performance', onClick: () => setPanel('performance'), chip: 'bg-success-soft text-success' },
+          { icon: FileTextIcon, label: 'Letters', onClick: () => setPanel('letters'), chip: 'bg-accent-soft text-accent' },
+        ].map(({ icon: Icon, label, onClick, chip }) => (
           <button
             key={label}
             onClick={onClick}
             disabled={!onClick}
-            className="flex w-full items-center justify-between border-b border-border-soft px-4 py-3.5 last:border-b-0 disabled:opacity-50"
+            className="flex w-full items-center justify-between border-b border-border-soft px-4 py-3.5 transition-colors last:border-b-0 hover:bg-bg disabled:opacity-50 disabled:hover:bg-transparent"
           >
             <div className="flex items-center gap-3 text-[13px] font-medium text-text">
-              <Icon width={17} height={17} className="text-text-muted" />
+              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${chip}`}>
+                <Icon width={16} height={16} />
+              </div>
               {label}
             </div>
             <ChevronRightIcon width={16} height={16} className="text-text-faint" />
           </button>
         ))}
-        <button onClick={() => logout()} className="flex w-full items-center gap-3 px-4 py-3.5 text-[13px] font-medium text-danger">
-          <LogOutIcon width={17} height={17} />
+        <button onClick={() => logout()} className="flex w-full items-center gap-3 px-4 py-3.5 text-[13px] font-medium text-danger transition-colors hover:bg-danger-soft">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-danger-soft text-danger">
+            <LogOutIcon width={16} height={16} />
+          </div>
           Sign Out
         </button>
       </div>

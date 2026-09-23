@@ -4,6 +4,7 @@ import { Avatar } from '@/shared/ui/Avatar';
 import { EmptyState, ErrorState } from '@/shared/ui/EmptyState';
 import { BellIcon, ClockIcon, CalendarIcon, FileTextIcon, ReceiptIcon, HelpCircleIcon, ChevronRightIcon } from '@/shared/ui/icons';
 import { useSession } from '@/shared/lib/session';
+import { leaveStyle } from '@/shared/lib/leaveStyle';
 import { listMyLeaveBalances } from '@/modules/leave/leaveService';
 import { getTodayAttendance, punchIn, punchOut } from '@/modules/attendance/attendanceService';
 import { listHolidays } from '@/modules/company/holidayService';
@@ -18,16 +19,6 @@ function greeting(): string {
   if (hour < 12) return 'Good morning';
   if (hour < 17) return 'Good afternoon';
   return 'Good evening';
-}
-
-const LEAVE_STYLES: { match: RegExp; chip: string; text: string }[] = [
-  { match: /sick/i, chip: 'bg-danger-soft', text: 'text-danger' },
-  { match: /casual/i, chip: 'bg-info-soft', text: 'text-info' },
-  { match: /earned/i, chip: 'bg-accent-soft', text: 'text-accent' },
-  { match: /bereavement/i, chip: 'bg-warning-soft', text: 'text-warning' },
-];
-function leaveStyle(name: string) {
-  return LEAVE_STYLES.find((s) => s.match.test(name)) ?? { chip: 'bg-border-soft', text: 'text-text-muted' };
 }
 
 const QUICK_ACTIONS = [
