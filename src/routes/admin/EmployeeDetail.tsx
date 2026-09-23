@@ -44,6 +44,10 @@ export default function EmployeeDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employee', id] });
       queryClient.invalidateQueries({ queryKey: ['employees', companyId] });
+      // Deactivation sets status to 'exited', which company_seat_usage
+      // excludes — without this the seat counter on Employees/Company
+      // stays stale until a full page reload.
+      queryClient.invalidateQueries({ queryKey: ['company', companyId] });
     },
   });
 

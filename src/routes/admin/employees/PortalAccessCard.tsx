@@ -6,7 +6,7 @@ import { Button } from '@/shared/ui/Button';
 import { Field, Input, Select } from '@/shared/ui/Input';
 import { grantPortalAccess, revokePortalAccess } from '@/modules/employee/employeeService';
 import type { EmployeeDetailRecord } from '@/modules/employee/employeeService';
-import type { Role } from '@/shared/lib/session';
+import { useSession, type Role } from '@/shared/lib/session';
 
 const GRANTABLE_ROLES: Role[] = [
   'employee', 'manager', 'hr_admin', 'payroll_admin', 'finance', 'recruiter', 'performance_admin', 'company_admin',
@@ -18,16 +18,22 @@ const ROLE_LABELS: Record<Role, string> = {
 };
 
 export function PortalAccessCard({ employee }: { employee: EmployeeDetailRecord }) {
+  const { user } = useSession();
   const queryClient = useQueryClient();
   const [granting, setGranting] = useState(false);
   const [email, setEmail] = useState(employee.personalEmail ?? '');
   const [role, setRole] = useState<Role>('employee');
   const [error, setError] = useState<string | null>(null);
 
+  // Granting/revoking access changes employees.auth_user_id, which is exactly
+  // what company_seat_usage counts — without invalidating the `company`
+  // query too, the seat counter on Employees/Company kept showing the stale
+  // number until a full page reload.
   const grantMutation = useMutation({
     mutationFn: () => grantPortalAccess(employee.id, email.trim(), role),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employee', employee.id] });
+      queryClient.invalidateQueries({ queryKey: ['company', user?.companyId] });
       setGranting(false);
     },
     onError: (err) => setError(err instanceof Error ? err.message : 'Could not grant portal access.'),
@@ -35,7 +41,10 @@ export function PortalAccessCard({ employee }: { employee: EmployeeDetailRecord 
 
   const revokeMutation = useMutation({
     mutationFn: () => revokePortalAccess(employee.id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['employee', employee.id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employee', employee.id] });
+      queryClient.invalidateQueries({ queryKey: ['company', user?.companyId] });
+    },
   });
 
   return (

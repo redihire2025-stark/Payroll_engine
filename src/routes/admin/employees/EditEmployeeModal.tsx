@@ -77,6 +77,9 @@ export function EditEmployeeModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employee', employee.id] });
       queryClient.invalidateQueries({ queryKey: ['employees', companyId] });
+      // This form can change `status`, which company_seat_usage filters on
+      // (active only) — without this the seat counter goes stale.
+      queryClient.invalidateQueries({ queryKey: ['company', companyId] });
       onClose();
     },
     onError: (err) => setError(err instanceof Error ? err.message : 'Could not save changes.'),

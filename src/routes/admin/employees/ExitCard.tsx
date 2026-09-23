@@ -6,10 +6,12 @@ import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { getMyExitCase, approveExit, rejectExit, markCleared, settleExit } from '@/modules/exit/exitService';
 import type { EmployeeDetailRecord } from '@/modules/employee/employeeService';
+import { useSession } from '@/shared/lib/session';
 
 const statusTone = { pending: 'warning', approved: 'info', cleared: 'info', settled: 'success', rejected: 'danger' } as const;
 
 export function ExitCard({ employee }: { employee: EmployeeDetailRecord }) {
+  const { user } = useSession();
   const queryClient = useQueryClient();
   const [lastWorkingDay, setLastWorkingDay] = useState('');
   const { data: exitCase } = useQuery({ queryKey: ['exit-case', employee.id], queryFn: () => getMyExitCase(employee.id) });
@@ -27,7 +29,13 @@ export function ExitCard({ employee }: { employee: EmployeeDetailRecord }) {
   const clearMutation = useMutation({ mutationFn: () => markCleared(exitCase!.id), onSuccess: invalidate });
   const settleMutation = useMutation({
     mutationFn: () => settleExit(exitCase!.id, employee.id, exitCase!.lastWorkingDay!, employee.hasPortalAccess),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      // Settling marks the employee exited and revokes portal access —
+      // both of which company_seat_usage counts on, so the seat counter
+      // on Employees/Company would otherwise stay stale.
+      queryClient.invalidateQueries({ queryKey: ['company', user?.companyId] });
+    },
   });
 
   if (!exitCase || exitCase.status === 'rejected') return null;
