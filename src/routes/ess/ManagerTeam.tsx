@@ -1,19 +1,20 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Avatar } from '@/shared/ui/Avatar';
 import { Badge } from '@/shared/ui/Badge';
 import { EmptyState, ErrorState, LoadingRows } from '@/shared/ui/EmptyState';
 import { UsersIcon } from '@/shared/ui/icons';
 import { useSession } from '@/shared/lib/session';
 import { listDirectReports } from '@/modules/employee/employeeService';
-import { listLeaveRequests } from '@/modules/leave/leaveService';
-import { listCorrections } from '@/modules/attendance/attendanceService';
+import { listLeaveRequests, updateLeaveRequestStatus } from '@/modules/leave/leaveService';
+import { listCorrections, decideCorrection } from '@/modules/attendance/attendanceService';
 
 const tabs = ['Approvals', 'Directory'] as const;
 
 export default function ManagerTeam() {
   const { user } = useSession();
   const [tab, setTab] = useState<(typeof tabs)[number]>('Approvals');
+  const queryClient = useQueryClient();
 
   const reportsQuery = useQuery({
     queryKey: ['direct-reports', user?.companyId, user?.employeeId],
@@ -31,6 +32,15 @@ export default function ManagerTeam() {
     queryKey: ['attendance-corrections', user?.companyId],
     queryFn: () => listCorrections(user!.companyId),
     enabled: Boolean(user?.companyId) && tab === 'Approvals',
+  });
+
+  const leaveMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'approved' | 'rejected' }) => updateLeaveRequestStatus(id, status),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['leave-requests', user?.companyId] }),
+  });
+  const correctionMutation = useMutation({
+    mutationFn: ({ id, decision }: { id: string; decision: 'approved' | 'rejected' }) => decideCorrection(id, decision, user!.companyId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['attendance-corrections', user?.companyId] }),
   });
 
   const pendingLeave = (leaveQuery.data ?? []).filter((l) => l.status === 'pending' && reportIds.has(l.employeeId));
@@ -79,8 +89,20 @@ export default function ManagerTeam() {
                 </div>
                 {l.reason && <p className="mt-2 text-[12px] text-text-muted">{l.reason}</p>}
                 <div className="mt-3 flex gap-2">
-                  <button className="flex-1 rounded-lg border border-border py-2 text-[12.5px] font-semibold text-text">Reject</button>
-                  <button className="flex-1 rounded-lg bg-accent py-2 text-[12.5px] font-semibold text-white">Approve</button>
+                  <button
+                    disabled={leaveMutation.isPending}
+                    onClick={() => leaveMutation.mutate({ id: l.id, status: 'rejected' })}
+                    className="flex-1 rounded-lg border border-border py-2 text-[12.5px] font-semibold text-text disabled:opacity-50"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    disabled={leaveMutation.isPending}
+                    onClick={() => leaveMutation.mutate({ id: l.id, status: 'approved' })}
+                    className="flex-1 rounded-lg bg-accent py-2 text-[12.5px] font-semibold text-white disabled:opacity-50"
+                  >
+                    Approve
+                  </button>
                 </div>
               </div>
             ))}
@@ -96,8 +118,20 @@ export default function ManagerTeam() {
                 </div>
                 <p className="mt-2 text-[12px] text-text-muted">{c.reason}</p>
                 <div className="mt-3 flex gap-2">
-                  <button className="flex-1 rounded-lg border border-border py-2 text-[12.5px] font-semibold text-text">Reject</button>
-                  <button className="flex-1 rounded-lg bg-accent py-2 text-[12.5px] font-semibold text-white">Approve</button>
+                  <button
+                    disabled={correctionMutation.isPending}
+                    onClick={() => correctionMutation.mutate({ id: c.id, decision: 'rejected' })}
+                    className="flex-1 rounded-lg border border-border py-2 text-[12.5px] font-semibold text-text disabled:opacity-50"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    disabled={correctionMutation.isPending}
+                    onClick={() => correctionMutation.mutate({ id: c.id, decision: 'approved' })}
+                    className="flex-1 rounded-lg bg-accent py-2 text-[12.5px] font-semibold text-white disabled:opacity-50"
+                  >
+                    Approve
+                  </button>
                 </div>
               </div>
             ))}
