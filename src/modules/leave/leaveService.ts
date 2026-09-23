@@ -1,5 +1,6 @@
 import { supabase } from '@/shared/lib/supabaseClient';
 import { listEmployeesLite } from '@/modules/employee/employeeService';
+import { sendLeaveDecisionEmail } from '@/modules/notifications/notificationService';
 
 export interface LeaveRequestRow {
   id: string;
@@ -90,6 +91,8 @@ export async function updateLeaveRequestStatus(leaveRequestId: string, status: '
     const year = new Date(request.start_date as string).getFullYear();
     await consumeLeaveBalance(request.employee_id as string, request.leave_type_id as string, Number(request.days), year);
   }
+
+  await sendLeaveDecisionEmail(leaveRequestId, status).catch(() => {});
 }
 
 export interface LeavePolicyRow {

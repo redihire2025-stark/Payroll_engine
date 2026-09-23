@@ -131,7 +131,9 @@ export default function Company() {
               Adding an employee to HR records does not use a seat — only granting them portal login access does.
               Contact us to increase your plan's seat limit.
             </p>
-            <Button variant="secondary" size="sm" className="mt-3">Manage Seats</Button>
+            <Button variant="secondary" size="sm" className="mt-3" onClick={() => { window.location.href = 'mailto:support@rhirepro.com?subject=Increase seat limit'; }}>
+              Contact Us to Increase Seats
+            </Button>
           </div>
         </Card>
       </div>

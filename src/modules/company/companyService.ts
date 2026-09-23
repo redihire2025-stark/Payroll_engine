@@ -89,6 +89,44 @@ export async function updateCompanyProfile(companyId: string, fields: UpdateComp
   if (error) throw error;
 }
 
+export interface CompanySettingsRow {
+  fiscalYearStartMonth: number;
+  defaultCurrency: string;
+  timezone: string;
+  payrollCycleType: string;
+  payDay: number;
+}
+
+export async function getCompanySettings(companyId: string): Promise<CompanySettingsRow> {
+  const { data, error } = await supabase
+    .from('company_settings')
+    .select('fiscal_year_start_month, default_currency, timezone, payroll_cycle_type, pay_day')
+    .eq('company_id', companyId)
+    .single();
+  if (error) throw error;
+  return {
+    fiscalYearStartMonth: data.fiscal_year_start_month as number,
+    defaultCurrency: data.default_currency as string,
+    timezone: data.timezone as string,
+    payrollCycleType: data.payroll_cycle_type as string,
+    payDay: data.pay_day as number,
+  };
+}
+
+export async function updateCompanySettings(companyId: string, fields: CompanySettingsRow): Promise<void> {
+  const { error } = await supabase
+    .from('company_settings')
+    .update({
+      fiscal_year_start_month: fields.fiscalYearStartMonth,
+      default_currency: fields.defaultCurrency,
+      timezone: fields.timezone,
+      payroll_cycle_type: fields.payrollCycleType,
+      pay_day: fields.payDay,
+    })
+    .eq('company_id', companyId);
+  if (error) throw error;
+}
+
 export async function uploadCompanyLogo(companyId: string, file: File): Promise<string> {
   const ext = file.name.split('.').pop() || 'png';
   const path = `${companyId}/logo-${Date.now()}.${ext}`;

@@ -1,6 +1,7 @@
 import { supabase } from '@/shared/lib/supabaseClient';
 import { callNetlifyFunction } from '@/shared/lib/netlifyFunctions';
 import { buildPayslipPdf } from './generatePayslipPdf';
+import { sendPayslipReadyEmail } from '@/modules/notifications/notificationService';
 
 export interface GeneratePayslipsResult {
   generated: number;
@@ -80,8 +81,14 @@ export async function generatePayslipsForRun(runId: string, companyId: string): 
     const { error: uploadErr } = await supabase.storage.from('payslips').upload(storagePath, blob, { contentType: 'application/pdf', upsert: true });
     if (uploadErr) throw uploadErr;
 
-    const { error: insertErr } = await supabase.from('payslips').insert({ payroll_item_id: item.id, storage_path: storagePath });
+    const { data: inserted, error: insertErr } = await supabase
+      .from('payslips')
+      .insert({ payroll_item_id: item.id, storage_path: storagePath })
+      .select('id')
+      .single();
     if (insertErr) throw insertErr;
+
+    sendPayslipReadyEmail(inserted.id as string).catch(() => {});
 
     generated += 1;
   }

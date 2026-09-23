@@ -8,6 +8,7 @@ import Landing from '@/routes/Landing';
 import Login from '@/routes/auth/Login';
 import Register from '@/routes/auth/Register';
 import Company from '@/routes/admin/Company';
+import Settings from '@/routes/admin/Settings';
 import PayslipPrint from '@/routes/print/PayslipPrint';
 import Dashboard from '@/routes/admin/Dashboard';
 import Employees from '@/routes/admin/Employees';
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="recruitment" element={<Recruitment />} />
             <Route path="reports" element={<Reports />} />
             <Route path="audit-log" element={<AuditLog />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
         </Route>
 
