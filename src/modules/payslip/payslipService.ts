@@ -21,7 +21,11 @@ async function generatePayslipsForRunInner(runId: string, companyId: string): Pr
     throw new Error('Payroll must be locked before payslips can be generated.');
   }
 
-  const { data: company, error: companyErr } = await supabase.from('companies').select('name, reg_office, cin').eq('id', companyId).single();
+  const { data: company, error: companyErr } = await supabase
+    .from('companies')
+    .select('name, legal_name, reg_office, cin, phone, website, email, state, brand_accent_color, name_accent_prefix_length')
+    .eq('id', companyId)
+    .single();
   if (companyErr) throw companyErr;
 
   const { data: items, error: itemsErr } = await supabase
@@ -65,10 +69,17 @@ async function generatePayslipsForRunInner(runId: string, companyId: string): Pr
     } | null;
     const employeeName = [employee?.employee_profiles?.first_name, employee?.employee_profiles?.last_name].filter(Boolean).join(' ') || employee?.employee_code || 'Employee';
 
-    const doc = buildPayslipPdf(new jsPDF(), {
+    const doc = await buildPayslipPdf(new jsPDF(), {
       companyName: company.name,
+      companyLegalName: company.legal_name,
       companyRegOffice: company.reg_office,
       companyCin: company.cin,
+      companyPhone: company.phone,
+      companyWebsite: company.website,
+      companyEmail: company.email,
+      companyState: company.state,
+      brandAccentColor: company.brand_accent_color,
+      nameAccentPrefixLength: company.name_accent_prefix_length,
       employeeName,
       employeeCode: employee?.employee_code ?? '',
       department: employee?.departments?.name ?? null,

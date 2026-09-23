@@ -1,5 +1,6 @@
 import { OrgLogo } from '@/shared/ui/OrgLogo';
 import { formatINR2, numberToWordsINR } from '@/shared/lib/format';
+import { componentLabel, isBonus, withStatutoryZeroLines, formatSalarySlipTitle, buildImportantNotes } from './payslipFormat';
 import type { Company } from '@/modules/company/companyService';
 import type { EmployeeDetailRecord } from '@/modules/employee/employeeService';
 import type { PayrollRunRow, PayrollItemDetail } from '@/modules/payroll/payrollService';
@@ -26,10 +27,17 @@ export function PayslipDocument({
 }) {
   const workingDays = 30 - item.lopDays; // calendar days in the pay period, minus LOP
 
-  const notes: string[] = [];
-  if (company.state) notes.push(`Professional Tax deductions are as per ${company.state} State rules.`);
-  if (item.lopDays > 0) notes.push(`${item.lopDays} day(s) of loss-of-pay adjusted for this period.`);
-  notes.push('This payslip is computer generated and does not require a signature.');
+  const regularEarnings = item.earnings.filter((e) => !isBonus(e.code));
+  const bonusEarnings = item.earnings.filter((e) => isBonus(e.code));
+  const regularEarningsTotal = regularEarnings.reduce((s, e) => s + e.amount, 0);
+  const bonusTotal = bonusEarnings.reduce((s, e) => s + e.amount, 0);
+  const deductionsWithStatutoryZeroLines = withStatutoryZeroLines(item.deductions);
+
+  const pt = item.deductions.find((d) => d.code === 'professional_tax')?.amount ?? 0;
+  const epf = item.deductions.find((d) => d.code === 'epf')?.amount ?? 0;
+  const esi = item.deductions.find((d) => d.code === 'esi')?.amount ?? 0;
+  const tds = item.deductions.find((d) => d.code === 'tds')?.amount ?? 0;
+  const notes = buildImportantNotes({ state: company.state, professionalTax: pt, epf, esi, tds, lopDays: item.lopDays });
 
   const upperName = company.name.toUpperCase();
   const accentPart = upperName.slice(0, company.nameAccentPrefixLength);
@@ -53,7 +61,7 @@ export function PayslipDocument({
             <span style={{ color: company.brandAccentColor }}>{accentPart}</span>
             <span className="text-text">{restPart}</span>
           </h1>
-          <p className="mt-1.5 text-[12.5px] font-semibold text-text">Salary Slip For the period {run.periodStart} to {run.periodEnd}</p>
+          <p className="mt-1.5 text-[12.5px] font-semibold text-text">{formatSalarySlipTitle(run.periodStart, run.periodEnd)}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -79,17 +87,17 @@ export function PayslipDocument({
               <tr><th colSpan={2} className="border border-border-soft px-3 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white" style={{ background: '#5CB85C' }}>Regular Earnings</th></tr>
             </thead>
             <tbody>
-              {item.earnings.length === 0 ? (
+              {regularEarnings.length === 0 ? (
                 <tr><td colSpan={2} className="border border-border-soft px-3 py-3 text-center text-text-faint">No earnings recorded</td></tr>
               ) : (
-                item.earnings.map((e) => (
+                regularEarnings.map((e) => (
                   <tr key={e.code}>
-                    <td className="border border-border-soft px-3 py-1.5 font-medium text-text">{e.code}</td>
+                    <td className="border border-border-soft px-3 py-1.5 font-medium text-text">{componentLabel(e.code)}</td>
                     <td className="border border-border-soft px-3 py-1.5 text-right font-mono-num text-text">{formatINR2(e.amount)}</td>
                   </tr>
                 ))
               )}
-              <tr><td className="border border-border-soft px-3 py-2 font-bold text-text">TOTAL EARNINGS</td><td className="border border-border-soft px-3 py-2 text-right font-mono-num font-bold text-text">{formatINR2(item.grossEarnings)}</td></tr>
+              <tr><td className="border border-border-soft px-3 py-2 font-bold text-text">TOTAL EARNINGS</td><td className="border border-border-soft px-3 py-2 text-right font-mono-num font-bold text-text">{formatINR2(regularEarningsTotal)}</td></tr>
             </tbody>
           </table>
 
@@ -98,20 +106,33 @@ export function PayslipDocument({
               <tr><th colSpan={2} className="border border-border-soft px-3 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white" style={{ background: '#E2574C' }}>Deductions</th></tr>
             </thead>
             <tbody>
-              {item.deductions.length === 0 ? (
-                <tr><td colSpan={2} className="border border-border-soft px-3 py-3 text-center text-text-faint">No deductions recorded</td></tr>
-              ) : (
-                item.deductions.map((d) => (
-                  <tr key={d.code}>
-                    <td className="border border-border-soft px-3 py-1.5 font-medium text-text">{d.code}</td>
-                    <td className="border border-border-soft px-3 py-1.5 text-right font-mono-num text-text">{formatINR2(d.amount)}</td>
-                  </tr>
-                ))
-              )}
+              {deductionsWithStatutoryZeroLines.map((d) => (
+                <tr key={d.code}>
+                  <td className="border border-border-soft px-3 py-1.5 font-medium text-text">{componentLabel(d.code)}</td>
+                  <td className="border border-border-soft px-3 py-1.5 text-right font-mono-num text-text">{formatINR2(d.amount)}</td>
+                </tr>
+              ))}
               <tr><td className="border border-border-soft px-3 py-2 font-bold text-text">TOTAL DEDUCTIONS</td><td className="border border-border-soft px-3 py-2 text-right font-mono-num font-bold text-text">{formatINR2(item.totalDeductions)}</td></tr>
             </tbody>
           </table>
         </div>
+
+        {bonusEarnings.length > 0 && (
+          <table className="w-full border-collapse text-[12.5px]">
+            <thead>
+              <tr><th colSpan={2} className="border border-border-soft px-3 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white" style={{ background: '#F0A500' }}>Bonus / Incentives</th></tr>
+            </thead>
+            <tbody>
+              {bonusEarnings.map((e) => (
+                <tr key={e.code}>
+                  <td className="border border-border-soft px-3 py-1.5 font-medium text-text">{componentLabel(e.code)}</td>
+                  <td className="border border-border-soft px-3 py-1.5 text-right font-mono-num text-text">{formatINR2(e.amount)}</td>
+                </tr>
+              ))}
+              <tr><td className="border border-border-soft px-3 py-2 font-bold text-text">TOTAL BONUS</td><td className="border border-border-soft px-3 py-2 text-right font-mono-num font-bold text-text">{formatINR2(bonusTotal)}</td></tr>
+            </tbody>
+          </table>
+        )}
 
         <div className="flex items-center justify-between rounded px-5 py-3 text-white" style={{ background: company.brandAccentColor }}>
           <span className="text-[13px] font-bold">
