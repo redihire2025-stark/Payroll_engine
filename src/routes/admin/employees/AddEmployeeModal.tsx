@@ -60,7 +60,7 @@ export function AddEmployeeModal({ companyId, onClose }: { companyId: string; on
           mutation.mutate();
         }}
       >
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Employee code">
             <Input value={form.employeeCode} onChange={(e) => update('employeeCode', e.target.value)} placeholder="EMP001" required />
           </Field>
@@ -69,7 +69,7 @@ export function AddEmployeeModal({ companyId, onClose }: { companyId: string; on
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="First name">
             <Input value={form.firstName} onChange={(e) => update('firstName', e.target.value)} required />
           </Field>
@@ -78,7 +78,7 @@ export function AddEmployeeModal({ companyId, onClose }: { companyId: string; on
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Personal email">
             <Input type="email" value={form.personalEmail} onChange={(e) => update('personalEmail', e.target.value)} />
           </Field>
@@ -87,7 +87,7 @@ export function AddEmployeeModal({ companyId, onClose }: { companyId: string; on
           </Field>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Department" hint="Created if new">
             <Input value={form.departmentName} onChange={(e) => update('departmentName', e.target.value)} placeholder="e.g. Engineering" />
           </Field>

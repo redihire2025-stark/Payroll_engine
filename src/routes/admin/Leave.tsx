@@ -54,7 +54,7 @@ export default function Leave() {
 
       {error && <ErrorState message={(error as Error).message} />}
 
-      <div className="grid grid-cols-[2.2fr_1fr] gap-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2.2fr_1fr]">
         <Card>
           {isLoading ? (
             <LoadingRows />
@@ -63,14 +63,14 @@ export default function Leave() {
               <EmptyState icon={<CalendarIcon width={20} height={20} />} title="No leave requests" description="Requests submitted by employees will show up here for review." />
             </div>
           ) : (
-            <>
-              <div style={{ display: 'grid', gridTemplateColumns: cols }} className="gap-3 border-b border-border px-5 py-2.5">
+            <div className="overflow-x-auto">
+              <div style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 900 }} className="gap-3 border-b border-border px-5 py-2.5">
                 {['Employee', 'Type', 'Dates', 'Days', 'Reason', 'Applied On', ''].map((h) => (
                   <div key={h} className="text-[11px] font-bold uppercase tracking-wide text-text-faint">{h}</div>
                 ))}
               </div>
               {filtered.map((l) => (
-                <div key={l.id} style={{ display: 'grid', gridTemplateColumns: cols }} className="items-center gap-3 border-b border-border-soft px-5 py-3.5 text-[13px] last:border-b-0">
+                <div key={l.id} style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 900 }} className="items-center gap-3 border-b border-border-soft px-5 py-3.5 text-[13px] last:border-b-0">
                   <div className="flex items-center gap-2.5">
                     <Avatar name={l.employeeName} size={28} />
                     <span className="truncate font-medium text-text">{l.employeeName}</span>
@@ -106,7 +106,7 @@ export default function Leave() {
                   </div>
                 </div>
               ))}
-            </>
+            </div>
           )}
         </Card>
 

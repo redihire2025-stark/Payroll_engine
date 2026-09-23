@@ -31,12 +31,12 @@ export default function Employees() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-[22px] font-bold text-text">Employees</h1>
           <p className="mt-0.5 text-[13px] text-text-faint">{employees.length} employee{employees.length === 1 ? '' : 's'}</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           {company && (
             <div className="text-right">
               <div className="text-[12px] font-semibold text-text">{company.seatsUsed} / {company.employeeSeatLimit} seats used</div>
@@ -53,7 +53,7 @@ export default function Employees() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <SearchInput placeholder="Search by name or employee code…" />
         <Select defaultValue="all"><option value="all">All Departments</option></Select>
         <Select defaultValue="all"><option value="all">All Branches</option></Select>
@@ -74,8 +74,8 @@ export default function Employees() {
           action={<Button variant="primary" icon={<PlusIcon width={15} height={15} />} onClick={() => setModal('add')}>Add Employee</Button>}
         />
       ) : (
-        <div className="rounded-xl border border-border bg-surface shadow-card">
-          <div style={{ display: 'grid', gridTemplateColumns: cols }} className="gap-3 border-b border-border px-5 py-2.5">
+        <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-card">
+          <div style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 780 }} className="gap-3 border-b border-border px-5 py-2.5">
             {['Employee', 'Department', 'Designation', 'Branch', 'Status', 'Date of Joining'].map((h) => (
               <div key={h} className="text-[11px] font-bold uppercase tracking-wide text-text-faint">{h}</div>
             ))}
@@ -84,7 +84,7 @@ export default function Employees() {
             <Link
               to={`/admin/employees/${e.id}`}
               key={e.id}
-              style={{ display: 'grid', gridTemplateColumns: cols }}
+              style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 780 }}
               className="items-center gap-3 border-b border-border-soft px-5 py-3.5 text-[13px] last:border-b-0 hover:bg-bg/70"
             >
               <div className="flex min-w-0 items-center gap-3">

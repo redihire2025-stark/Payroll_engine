@@ -94,7 +94,7 @@ export default function Settings() {
         <Card>
           <CardHeader title="Payroll Calendar" subtitle="Governs which financial year a payroll run and its statutory filings fall under" />
           <div className="flex flex-col gap-4 px-5 py-5">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Fiscal year starts">
                 <Select name="fiscalYearStartMonth" defaultValue={settings.fiscalYearStartMonth}>
                   {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
@@ -108,7 +108,7 @@ export default function Settings() {
                 </Select>
               </Field>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Pay day of month" hint="1–31">
                 <Input name="payDay" type="number" min={1} max={31} defaultValue={settings.payDay} />
               </Field>

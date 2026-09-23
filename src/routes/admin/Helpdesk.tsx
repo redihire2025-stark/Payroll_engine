@@ -86,8 +86,8 @@ export default function Helpdesk() {
             <EmptyState icon={<AlertIcon width={20} height={20} />} title="No tickets" description="Employee support requests will appear here." />
           </div>
         ) : (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: cols }} className="gap-3 border-b border-border px-5 py-2.5">
+          <div className="overflow-x-auto">
+            <div style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 700 }} className="gap-3 border-b border-border px-5 py-2.5">
               {['Employee', 'Category', 'Subject', 'Priority', 'Status'].map((h) => (
                 <div key={h} className="text-[11px] font-bold uppercase tracking-wide text-text-faint">{h}</div>
               ))}
@@ -96,7 +96,7 @@ export default function Helpdesk() {
               <div key={t.id} className="border-b border-border-soft last:border-b-0">
                 <button
                   onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
-                  style={{ display: 'grid', gridTemplateColumns: cols }}
+                  style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 700 }}
                   className="w-full items-center gap-3 px-5 py-3.5 text-left text-[13px] hover:bg-bg/70"
                 >
                   <div className="truncate font-medium text-text">{t.employeeName}</div>
@@ -119,7 +119,7 @@ export default function Helpdesk() {
                 {expandedId === t.id && <TicketThread ticketId={t.id} />}
               </div>
             ))}
-          </>
+          </div>
         )}
       </Card>
     </div>

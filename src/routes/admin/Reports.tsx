@@ -189,7 +189,7 @@ export default function Reports() {
         <p className="mt-0.5 text-[13px] text-text-faint">Generate and export reports across payroll and HR</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {reportCatalog.map((r) => (
           <Card key={r.key} className="p-5">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-soft text-accent-strong">

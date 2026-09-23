@@ -93,7 +93,7 @@ export default function PayrollRunDetail() {
         )}
       </Card>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile label="Gross Earnings" value={formatINR(gross)} />
         <StatTile label="Deductions" value={formatINR(deductions)} />
         <StatTile label="Net Payable" value={formatINR(net)} />
@@ -109,14 +109,14 @@ export default function PayrollRunDetail() {
             <EmptyState title="No items calculated for this run" description="Payroll items appear here once this run has been calculated." />
           </div>
         ) : (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: cols }} className="gap-3 border-b border-border px-5 py-2.5">
+          <div className="overflow-x-auto">
+            <div style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 560 }} className="gap-3 border-b border-border px-5 py-2.5">
               {['Employee', 'Gross', 'Net Pay', ''].map((h) => (
                 <div key={h} className="text-right text-[11px] font-bold uppercase tracking-wide text-text-faint first:text-left">{h}</div>
               ))}
             </div>
             {items.map((item) => (
-              <div key={item.id} style={{ display: 'grid', gridTemplateColumns: cols }} className="items-center gap-3 border-b border-border-soft px-5 py-3 text-[12.5px] last:border-b-0">
+              <div key={item.id} style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 560 }} className="items-center gap-3 border-b border-border-soft px-5 py-3 text-[12.5px] last:border-b-0">
                 <div className="flex items-center gap-2.5">
                   <Avatar name={item.employeeName} size={26} />
                   <span className="truncate font-medium text-text">{item.employeeName}</span>
@@ -129,7 +129,7 @@ export default function PayrollRunDetail() {
                 </div>
               </div>
             ))}
-          </>
+          </div>
         )}
       </Card>
     </div>

@@ -46,24 +46,26 @@ export default function PayrollRuns() {
         />
       ) : (
         <Card>
-          <div style={{ display: 'grid', gridTemplateColumns: cols }} className="gap-3 border-b border-border px-5 py-2.5">
-            {['Period', 'Run Type', 'Status', ''].map((h) => (
-              <div key={h} className="text-[11px] font-bold uppercase tracking-wide text-text-faint">{h}</div>
+          <div className="overflow-x-auto">
+            <div style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 560 }} className="gap-3 border-b border-border px-5 py-2.5">
+              {['Period', 'Run Type', 'Status', ''].map((h) => (
+                <div key={h} className="text-[11px] font-bold uppercase tracking-wide text-text-faint">{h}</div>
+              ))}
+            </div>
+            {runs.map((run) => (
+              <Link
+                to={`/admin/payroll/${run.id}`}
+                key={run.id}
+                style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 560 }}
+                className="items-center gap-3 border-b border-border-soft px-5 py-3.5 text-[13px] last:border-b-0 hover:bg-bg/70"
+              >
+                <div className="font-semibold text-text">{run.periodStart} – {run.periodEnd}</div>
+                <div className="capitalize text-text-muted">{run.runType.replace('_', '-')}</div>
+                <div><Badge tone={statusTone[run.status]}>{run.status.replace('_', ' ')}</Badge></div>
+                <div className="text-right text-text-faint">···</div>
+              </Link>
             ))}
           </div>
-          {runs.map((run) => (
-            <Link
-              to={`/admin/payroll/${run.id}`}
-              key={run.id}
-              style={{ display: 'grid', gridTemplateColumns: cols }}
-              className="items-center gap-3 border-b border-border-soft px-5 py-3.5 text-[13px] last:border-b-0 hover:bg-bg/70"
-            >
-              <div className="font-semibold text-text">{run.periodStart} – {run.periodEnd}</div>
-              <div className="capitalize text-text-muted">{run.runType.replace('_', '-')}</div>
-              <div><Badge tone={statusTone[run.status]}>{run.status.replace('_', ' ')}</Badge></div>
-              <div className="text-right text-text-faint">···</div>
-            </Link>
-          ))}
         </Card>
       )}
 

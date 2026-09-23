@@ -42,14 +42,14 @@ export default function AuditLog() {
             <EmptyState icon={<ShieldIcon width={20} height={20} />} title="No audit activity yet" description="Sensitive actions — payroll changes, approvals, permission changes — are logged here as they happen." />
           </div>
         ) : (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: cols }} className="gap-3 border-b border-border px-5 py-2.5">
+          <div className="overflow-x-auto">
+            <div style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 700 }} className="gap-3 border-b border-border px-5 py-2.5">
               {['Timestamp', 'Actor', 'Action', 'Entity', 'IP Address'].map((h) => (
                 <div key={h} className="text-[11px] font-bold uppercase tracking-wide text-text-faint">{h}</div>
               ))}
             </div>
             {entries.map((a) => (
-              <div key={a.id} style={{ display: 'grid', gridTemplateColumns: cols }} className="items-center gap-3 border-b border-border-soft px-5 py-3.5 text-[13px] last:border-b-0">
+              <div key={a.id} style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 700 }} className="items-center gap-3 border-b border-border-soft px-5 py-3.5 text-[13px] last:border-b-0">
                 <div className="font-mono-num text-text-muted">{new Date(a.createdAt).toLocaleString()}</div>
                 <div className="font-medium text-text">{a.actorId ?? 'System'}</div>
                 <div><Badge tone={actionTone[a.action] ?? 'neutral'}>{a.action}</Badge></div>
@@ -57,7 +57,7 @@ export default function AuditLog() {
                 <div className="font-mono-num text-text-faint">{a.ipAddress ?? '—'}</div>
               </div>
             ))}
-          </>
+          </div>
         )}
       </Card>
     </div>

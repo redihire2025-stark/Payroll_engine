@@ -174,7 +174,7 @@ function CycleDetail({ cycle, companyId, onBack }: { cycle: CycleRow; companyId:
                     </Button>
                   </div>
                 </div>
-                <div className="mt-2 grid grid-cols-2 gap-3 text-[12px]">
+                <div className="mt-2 grid grid-cols-1 gap-3 text-[12px] sm:grid-cols-2">
                   <div>
                     <div className="text-text-faint">Self: {r.selfRating ? `${r.selfRating}/5` : '—'}</div>
                     {r.selfComments && <div className="mt-0.5 text-text-muted">{r.selfComments}</div>}

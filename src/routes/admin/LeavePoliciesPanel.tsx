@@ -98,7 +98,7 @@ export function LeavePoliciesPanel({ companyId }: { companyId: string }) {
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
           </Select>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Input type="number" min={0} placeholder="Annual quota" value={annualQuota} onChange={(e) => setAnnualQuota(e.target.value)} required />
             <Input type="number" min={0} placeholder="Carry-forward max" value={carryForwardMax} onChange={(e) => setCarryForwardMax(e.target.value)} />
           </div>

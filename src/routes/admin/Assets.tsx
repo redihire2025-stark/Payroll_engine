@@ -113,14 +113,14 @@ export default function Assets() {
             <EmptyState icon={<WalletIcon width={20} height={20} />} title="No assets yet" description="Add company equipment to start tracking issue/return." />
           </div>
         ) : (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: cols }} className="gap-3 border-b border-border px-5 py-2.5">
+          <div className="overflow-x-auto">
+            <div style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 700 }} className="gap-3 border-b border-border px-5 py-2.5">
               {['Asset', 'Category', 'Serial', 'Status', ''].map((h) => (
                 <div key={h} className="text-[11px] font-bold uppercase tracking-wide text-text-faint">{h}</div>
               ))}
             </div>
             {assets.map((a) => (
-              <div key={a.id} style={{ display: 'grid', gridTemplateColumns: cols }} className="items-center gap-3 border-b border-border-soft px-5 py-3.5 text-[13px] last:border-b-0">
+              <div key={a.id} style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 700 }} className="items-center gap-3 border-b border-border-soft px-5 py-3.5 text-[13px] last:border-b-0">
                 <div className="font-medium text-text">{a.name}</div>
                 <div className="text-text-muted">{a.category}</div>
                 <div className="font-mono-num text-text-faint">{a.serialNumber ?? '—'}</div>
@@ -137,7 +137,7 @@ export default function Assets() {
                 </div>
               </div>
             ))}
-          </>
+          </div>
         )}
       </Card>
 

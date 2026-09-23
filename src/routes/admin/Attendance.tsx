@@ -103,7 +103,7 @@ function ShiftsTab({ companyId }: { companyId: string }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card>
           <CardHeader title="Shifts" subtitle="Start/end time and grace period" />
           <div className="px-5 pb-4">
@@ -179,12 +179,12 @@ export default function Attendance() {
 
       {error && <ErrorState message={(error as Error).message} />}
 
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex gap-1 overflow-x-auto border-b border-border">
         {tabs.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`border-b-2 px-3 pb-2.5 text-[13px] font-semibold ${tab === t ? 'border-accent text-accent' : 'border-transparent text-text-faint'}`}
+            className={`shrink-0 border-b-2 px-3 pb-2.5 text-[13px] font-semibold ${tab === t ? 'border-accent text-accent' : 'border-transparent text-text-faint'}`}
           >
             {t}
           </button>
@@ -203,14 +203,14 @@ export default function Attendance() {
             <EmptyState icon={<ClockIcon width={20} height={20} />} title="No correction requests" description="Employee attendance correction requests will appear here." />
           </div>
         ) : (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: cols }} className="gap-3 border-b border-border px-5 py-2.5">
+          <div className="overflow-x-auto">
+            <div style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 900 }} className="gap-3 border-b border-border px-5 py-2.5">
               {['Employee', 'Date', 'Requested In', 'Requested Out', 'Reason', 'Status', ''].map((h) => (
                 <div key={h} className="text-[11px] font-bold uppercase tracking-wide text-text-faint">{h}</div>
               ))}
             </div>
             {corrections.map((c) => (
-              <div key={c.id} style={{ display: 'grid', gridTemplateColumns: cols }} className="items-center gap-3 border-b border-border-soft px-5 py-3.5 text-[13px] last:border-b-0">
+              <div key={c.id} style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 900 }} className="items-center gap-3 border-b border-border-soft px-5 py-3.5 text-[13px] last:border-b-0">
                 <div className="flex items-center gap-2.5">
                   <Avatar name={c.employeeName} size={28} />
                   <span className="truncate font-medium text-text">{c.employeeName}</span>
@@ -246,7 +246,7 @@ export default function Attendance() {
                 </div>
               </div>
             ))}
-          </>
+          </div>
         )}
       </Card>
       )}

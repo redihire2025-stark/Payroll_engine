@@ -98,7 +98,7 @@ export function EditEmployeeModal({
           mutation.mutate();
         }}
       >
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="First name">
             <Input value={form.firstName} onChange={(e) => update('firstName', e.target.value)} required />
           </Field>
@@ -107,7 +107,7 @@ export function EditEmployeeModal({
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Personal email">
             <Input type="email" value={form.personalEmail} onChange={(e) => update('personalEmail', e.target.value)} />
           </Field>
@@ -116,7 +116,7 @@ export function EditEmployeeModal({
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Date of birth">
             <Input type="date" value={form.dob} onChange={(e) => update('dob', e.target.value)} />
           </Field>
@@ -125,7 +125,7 @@ export function EditEmployeeModal({
           </Field>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Department">
             <Input value={form.departmentName} onChange={(e) => update('departmentName', e.target.value)} />
           </Field>
@@ -146,7 +146,7 @@ export function EditEmployeeModal({
           </Select>
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Date of joining">
             <Input type="date" value={form.dateOfJoining} onChange={(e) => update('dateOfJoining', e.target.value)} required />
           </Field>
@@ -160,7 +160,7 @@ export function EditEmployeeModal({
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Status">
             <Select value={form.status} onChange={(e) => update('status', e.target.value as typeof form.status)}>
               <option value="active">Active</option>

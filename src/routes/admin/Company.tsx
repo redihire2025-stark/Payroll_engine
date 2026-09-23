@@ -72,7 +72,7 @@ export default function Company() {
 
       {saveError && <ErrorState message={saveError} />}
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card>
           <CardHeader title="Branding" subtitle="Appears on the employee portal and every generated payslip" />
           <div className="flex items-center gap-5 px-5 py-5">
@@ -94,16 +94,16 @@ export default function Company() {
               <Field label="Organization name"><Input name="name" defaultValue={company.name} /></Field>
               <Field label="Legal name"><Input name="legalName" defaultValue={company.legalName} /></Field>
               <Field label="Registered office"><Input name="regOffice" defaultValue={company.regOffice ?? ''} /></Field>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field label="Phone"><Input name="phone" defaultValue={company.phone ?? ''} /></Field>
                 <Field label="State"><Input name="state" defaultValue={company.state ?? ''} /></Field>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field label="Website"><Input name="website" defaultValue={company.website ?? ''} /></Field>
                 <Field label="Email"><Input name="email" type="email" defaultValue={company.email ?? ''} /></Field>
               </div>
               <Field label="CIN"><Input name="cin" defaultValue={company.cin ?? ''} /></Field>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field label="Country"><Select defaultValue="IN"><option value="IN">India</option></Select></Field>
                 <Field label="Default Currency"><Select defaultValue="INR"><option value="INR">INR (₹)</option></Select></Field>
               </div>

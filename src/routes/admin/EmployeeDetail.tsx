@@ -57,7 +57,7 @@ export default function EmployeeDetail() {
         <Link to="/admin/employees" className="text-accent">Employees</Link> / {employee.name}
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-4">
           <Avatar name={employee.name} size={56} />
           <div>
@@ -89,7 +89,7 @@ export default function EmployeeDetail() {
         </div>
       </div>
 
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex gap-1 overflow-x-auto border-b border-border">
         {tabs.map((t) => (
           <button
             key={t}
@@ -103,7 +103,7 @@ export default function EmployeeDetail() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card>
           <CardHeader title="Personal Information" />
           <div className="px-5 py-3">

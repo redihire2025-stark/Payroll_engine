@@ -54,8 +54,8 @@ function ExpenseClaimsTab({ companyId }: { companyId: string }) {
             <EmptyState icon={<ReceiptIcon width={20} height={20} />} title="No expense claims" description="Claims employees submit will appear here for review." />
           </div>
         ) : (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: cols }} className="gap-3 border-b border-border px-5 py-2.5">
+          <div className="overflow-x-auto">
+            <div style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 640 }} className="gap-3 border-b border-border px-5 py-2.5">
               {['Employee', 'Total', 'Status', ''].map((h) => (
                 <div key={h} className="text-[11px] font-bold uppercase tracking-wide text-text-faint">{h}</div>
               ))}
@@ -64,7 +64,7 @@ function ExpenseClaimsTab({ companyId }: { companyId: string }) {
               <div key={c.id} className="border-b border-border-soft last:border-b-0">
                 <button
                   onClick={() => setExpandedId(expandedId === c.id ? null : c.id)}
-                  style={{ display: 'grid', gridTemplateColumns: cols }}
+                  style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 640 }}
                   className="w-full items-center gap-3 px-5 py-3.5 text-left text-[13px] hover:bg-bg/70"
                 >
                   <div className="flex items-center gap-2.5">
@@ -94,7 +94,7 @@ function ExpenseClaimsTab({ companyId }: { companyId: string }) {
                 {expandedId === c.id && <ExpandedItems reimbursementId={c.id} />}
               </div>
             ))}
-          </>
+          </div>
         )}
       </Card>
     </>
@@ -160,8 +160,8 @@ function LoansTab({ companyId }: { companyId: string }) {
             <EmptyState icon={<BanknoteIcon width={20} height={20} />} title="No loan requests" description="Employee loan requests will appear here for review." />
           </div>
         ) : (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: cols }} className="gap-3 border-b border-border px-5 py-2.5">
+          <div className="overflow-x-auto">
+            <div style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 640 }} className="gap-3 border-b border-border px-5 py-2.5">
               {['Employee', 'Principal', 'Outstanding', ''].map((h) => (
                 <div key={h} className="text-[11px] font-bold uppercase tracking-wide text-text-faint">{h}</div>
               ))}
@@ -170,7 +170,7 @@ function LoansTab({ companyId }: { companyId: string }) {
               <div key={l.id} className="border-b border-border-soft last:border-b-0">
                 <button
                   onClick={() => setExpandedId(expandedId === l.id ? null : l.id)}
-                  style={{ display: 'grid', gridTemplateColumns: cols }}
+                  style={{ display: 'grid', gridTemplateColumns: cols, minWidth: 640 }}
                   className="w-full items-center gap-3 px-5 py-3.5 text-left text-[13px] hover:bg-bg/70"
                   disabled={l.status !== 'approved'}
                 >
@@ -197,7 +197,7 @@ function LoansTab({ companyId }: { companyId: string }) {
                 {expandedId === l.id && l.status === 'approved' && <RepaymentSchedule loanId={l.id} />}
               </div>
             ))}
-          </>
+          </div>
         )}
       </Card>
     </>

@@ -39,15 +39,15 @@ export default function Dashboard() {
         <LoadingRows />
       ) : (
         <>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <StatTile label="Active Employees" value={String(activeEmployees)} />
             <StatTile label="Pending Leave" value={String(pendingLeave.length)} />
             <StatTile label="Pending Corrections" value={String(pendingCorrections.length)} />
             <StatTile label="Payroll Runs" value={String(runs.length)} />
           </div>
 
-          <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-2 flex flex-col gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="flex flex-col gap-6 lg:col-span-2">
               <Card>
                 <CardHeader title="Payroll Runs" subtitle="Most recent first" />
                 {runs.length === 0 ? (

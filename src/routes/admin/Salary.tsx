@@ -75,11 +75,11 @@ function AddComponentForm({ companyId, structureId, earningComponents, nextSeque
 
   return (
     <form className="flex flex-col gap-2 border-t border-border-soft p-4" onSubmit={(e) => { e.preventDefault(); setError(null); mutation.mutate(); }}>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <Input placeholder="Name (e.g. HRA)" value={name} onChange={(e) => setName(e.target.value)} required />
         <Input placeholder="Code (e.g. HRA)" value={code} onChange={(e) => setCode(e.target.value)} required maxLength={20} />
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <Select value={type} onChange={(e) => setType(e.target.value as typeof type)}>
           <option value="earning">Earning</option>
           <option value="deduction">Deduction</option>
@@ -132,7 +132,7 @@ function AssignEmployeeForm({ companyId, structureId, onDone }: { companyId: str
           <option key={e.id} value={e.id}>{e.name} ({e.code})</option>
         ))}
       </Select>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <Input type="number" min={0} placeholder="Annual CTC" value={annualCtc} onChange={(e) => setAnnualCtc(e.target.value)} required />
         <Input type="date" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} required />
       </div>
@@ -197,7 +197,7 @@ export default function Salary() {
           action={<Button variant="primary" icon={<PlusIcon width={15} height={15} />} onClick={() => setShowNewStructure(true)}>New Structure</Button>}
         />
       ) : (
-        <div className="grid grid-cols-[260px_1fr] gap-5">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[260px_1fr]">
           <Card className="h-fit">
             <CardHeader title="Structures" />
             <div className="flex flex-col py-2">
@@ -230,21 +230,21 @@ export default function Salary() {
                 </div>
               ) : (
                 components.length > 0 && (
-                  <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.6fr 1fr' }} className="gap-3 border-b border-border px-5 py-2.5">
+                  <div className="overflow-x-auto">
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.6fr 1fr', minWidth: 560 }} className="gap-3 border-b border-border px-5 py-2.5">
                       {['Component', 'Type', 'Value Type', 'Value'].map((h) => (
                         <div key={h} className={`text-[11px] font-bold uppercase tracking-wide text-text-faint ${h === 'Value' ? 'text-right' : ''}`}>{h}</div>
                       ))}
                     </div>
                     {components.map((c) => (
-                      <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.6fr 1fr' }} className="items-center gap-3 border-b border-border-soft px-5 py-3.5 text-[13px] last:border-b-0">
+                      <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.6fr 1fr', minWidth: 560 }} className="items-center gap-3 border-b border-border-soft px-5 py-3.5 text-[13px] last:border-b-0">
                         <div className="font-medium text-text">{c.name}</div>
                         <div><Badge tone={typeTone[c.type]}>{typeLabel[c.type]}</Badge></div>
                         <div className="text-text-muted">{c.valueType === 'percentage' ? `${c.value}%` : 'Fixed'}</div>
                         <div className="text-right font-mono-num text-text">{c.valueType === 'amount' ? formatINR(c.value) : `${c.value}%`}</div>
                       </div>
                     ))}
-                  </>
+                  </div>
                 )
               )}
               {addingComponent && active && (
