@@ -85,3 +85,41 @@ describe('calculatePayrollItem — end to end', () => {
     expect(result.trace.map((t) => t.ruleKey).sort()).toEqual(result.statutory.map((r) => r.ruleKey).sort());
   });
 });
+
+describe('calculatePayrollItem — declared tax exemptions feed TDS', () => {
+  const tdsRuleSets: PayrollCalculationInput['ruleSets'] = [
+    {
+      ruleKey: 'tds',
+      enabled: true,
+      config: {
+        regime: 'old',
+        standardDeduction: 50000,
+        cessPercent: 4,
+        slabs: [{ upTo: 500000, rate: 0 }, { upTo: null, rate: 20 }],
+      },
+    },
+  ];
+  const withTdsInput: PayrollCalculationInput = {
+    employeeId: 'emp-1',
+    salaryComponents: components,
+    attendance: { workingDays: 26, presentDays: 26, paidLeaveDays: 0, lopDays: 0 },
+    ruleSets: tdsRuleSets,
+    otherDeductions: [],
+  };
+
+  it('reduces projected taxable income by verified declared exemptions', () => {
+    const withoutExemptions = calculatePayrollItem(withTdsInput);
+    const withExemptions = calculatePayrollItem({ ...withTdsInput, declaredExemptions: 150000 });
+    const tdsWithout = withoutExemptions.statutory.find((r) => r.ruleKey === 'tds')!;
+    const tdsWith = withExemptions.statutory.find((r) => r.ruleKey === 'tds')!;
+    expect(tdsWith.trace.taxableIncome).toBe((tdsWithout.trace.taxableIncome as number) - 150000);
+    expect(tdsWith.employeeAmount).toBeLessThan(tdsWithout.employeeAmount);
+  });
+
+  it('never lets declared exemptions push taxable income negative', () => {
+    const result = calculatePayrollItem({ ...withTdsInput, declaredExemptions: 10_000_000 });
+    const tds = result.statutory.find((r) => r.ruleKey === 'tds')!;
+    expect(tds.trace.taxableIncome).toBe(0);
+    expect(tds.employeeAmount).toBe(0);
+  });
+});
