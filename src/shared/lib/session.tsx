@@ -46,13 +46,22 @@ const SessionContext = createContext<SessionContextValue>({
   refresh: async () => {},
 });
 
+/** Falls back to the email's local part only when there's no linked employee record (e.g. a platform admin) or its profile is incomplete. */
+async function resolveDisplayName(employeeId: string | null, email: string): Promise<string> {
+  if (!employeeId) return email.split('@')[0];
+  const { data } = await supabase.from('employee_profiles').select('first_name, last_name').eq('employee_id', employeeId).maybeSingle();
+  const name = [data?.first_name, data?.last_name].filter(Boolean).join(' ');
+  return name || email.split('@')[0];
+}
+
 async function resolveSessionUser(authUserId: string, email: string): Promise<SessionUser | null> {
   const roles = await getMyCompanyRoles();
   if (roles.length === 0) return null;
   const primary = roles[0];
+  const name = await resolveDisplayName(primary.employeeId, email);
   return {
     id: authUserId,
-    name: email.split('@')[0],
+    name,
     email,
     roles: [primary.role],
     companyId: primary.companyId,
