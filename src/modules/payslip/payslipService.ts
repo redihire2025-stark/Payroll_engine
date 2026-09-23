@@ -27,10 +27,12 @@ async function generatePayslipsForRunInner(runId: string, companyId: string): Pr
   const { data: items, error: itemsErr } = await supabase
     .from('payroll_items')
     .select(
-      'id, employee_id, gross_earnings, total_deductions, net_pay, lop_days, employees(employee_code, departments(name), designations(title), employee_profiles(first_name, last_name))'
+      'id, employee_id, gross_earnings, total_deductions, net_pay, lop_days, employees(employee_code, date_of_joining, departments(name), designations(title), employee_profiles(first_name, last_name))'
     )
     .eq('payroll_run_id', runId);
   if (itemsErr) throw itemsErr;
+
+  const workingDays = Math.round((new Date(run.period_end as string).getTime() - new Date(run.period_start as string).getTime()) / 86400000) + 1;
 
   const { jsPDF } = await import('jspdf');
 
@@ -56,6 +58,7 @@ async function generatePayslipsForRunInner(runId: string, companyId: string): Pr
 
     const employee = item.employees as unknown as {
       employee_code: string;
+      date_of_joining: string | null;
       departments: { name: string } | null;
       designations: { title: string } | null;
       employee_profiles: { first_name: string; last_name: string | null } | null;
@@ -70,6 +73,8 @@ async function generatePayslipsForRunInner(runId: string, companyId: string): Pr
       employeeCode: employee?.employee_code ?? '',
       department: employee?.departments?.name ?? null,
       designation: employee?.designations?.title ?? null,
+      dateOfJoining: employee?.date_of_joining ?? null,
+      workingDays,
       periodStart: run.period_start as string,
       periodEnd: run.period_end as string,
       earnings: (earnings ?? []).map((e) => ({ code: e.component_code as string, amount: Number(e.amount) })),

@@ -9,6 +9,8 @@ export interface PayslipPdfInput {
   employeeCode: string;
   department: string | null;
   designation: string | null;
+  dateOfJoining: string | null;
+  workingDays: number;
   periodStart: string;
   periodEnd: string;
   earnings: { code: string; amount: number }[];
@@ -18,6 +20,53 @@ export interface PayslipPdfInput {
   totalDeductions: number;
   netPay: number;
   lopDays: number;
+}
+
+/** Known statutory/salary component codes mapped to the labels payslips conventionally use, rather than the raw DB code (e.g. "SPECIAL_ALLOWANCE" -> "Special Allowance"). */
+const COMPONENT_LABELS: Record<string, string> = {
+  BASIC: 'Basic Salary',
+  HRA: 'House Rent Allowance',
+  SPECIAL_ALLOWANCE: 'Special Allowance',
+  CONVEYANCE: 'Conveyance Allowance',
+  PERFORMANCE_BONUS: 'Performance Bonus',
+  epf: 'Provident Fund',
+  esi: 'ESI',
+  professional_tax: 'Professional Tax',
+  tds: 'Income Tax (TDS)',
+};
+
+function componentLabel(code: string): string {
+  if (COMPONENT_LABELS[code]) return COMPONENT_LABELS[code];
+  return code
+    .toLowerCase()
+    .split('_')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+function isBonus(code: string): boolean {
+  return /bonus|incentive/i.test(code);
+}
+
+/** The 4 statutory deductions every rule set always evaluates — shown explicitly at ₹0 when not deducted, matching how a real payslip states "Provident Fund ₹0.00" rather than omitting the line. */
+const STATUTORY_DEDUCTION_CODES = ['epf', 'esi', 'professional_tax', 'tds'];
+
+function withStatutoryZeroLines(deductions: { code: string; amount: number }[]): { code: string; amount: number }[] {
+  const present = new Map(deductions.map((d) => [d.code, d.amount]));
+  const statutoryRows = STATUTORY_DEDUCTION_CODES.map((code) => ({ code, amount: present.get(code) ?? 0 }));
+  const otherRows = deductions.filter((d) => !STATUTORY_DEDUCTION_CODES.includes(d.code));
+  return [...statutoryRows, ...otherRows];
+}
+
+function formatPeriodLabel(periodStart: string, periodEnd: string): string {
+  const start = new Date(`${periodStart}T00:00:00`);
+  const end = new Date(`${periodEnd}T00:00:00`);
+  const daysInMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+  const isFullCalendarMonth = start.getDate() === 1 && end.getDate() === daysInMonth && start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+  if (isFullCalendarMonth) {
+    return `Salary Slip for ${start.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}`;
+  }
+  return `Payslip for ${periodStart} to ${periodEnd}`;
 }
 
 /** Builds a payslip PDF with plain jsPDF text/line drawing — no html2canvas, no DOM snapshot, so it works identically whether triggered from a browser tab or a batch "Generate Payslips" run over many employees. */
@@ -49,16 +98,21 @@ export function buildPayslipPdf(doc: jsPDFType, input: PayslipPdfInput): jsPDFTy
 
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Payslip for ${input.periodStart} to ${input.periodEnd}`, marginX, y);
+  doc.text(formatPeriodLabel(input.periodStart, input.periodEnd), marginX, y);
   y += 8;
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
+  const dojLabel = input.dateOfJoining
+    ? new Date(`${input.dateOfJoining}T00:00:00`).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
+    : '—';
   const infoLines: [string, string][] = [
     ['Employee Name', input.employeeName],
     ['Employee Code', input.employeeCode],
     ['Department', input.department ?? '—'],
     ['Designation', input.designation ?? '—'],
+    ['Date of Joining', dojLabel],
+    ['Working Days', String(input.workingDays)],
   ];
   for (const [label, value] of infoLines) {
     doc.setFont('helvetica', 'bold');
@@ -88,7 +142,7 @@ export function buildPayslipPdf(doc: jsPDFType, input: PayslipPdfInput): jsPDFTy
 
     doc.setFont('helvetica', 'normal');
     for (const row of rows) {
-      doc.text(row.code, marginX + 2, y);
+      doc.text(componentLabel(row.code), marginX + 2, y);
       doc.text(formatINR2(row.amount), pageWidth - marginX - 2, y, { align: 'right' });
       y += 6;
     }
@@ -101,8 +155,17 @@ export function buildPayslipPdf(doc: jsPDFType, input: PayslipPdfInput): jsPDFTy
     y += 10;
   }
 
-  drawTable('Earnings', input.earnings, input.grossEarnings);
-  drawTable('Deductions', input.deductions, input.totalDeductions);
+  const regularEarnings = input.earnings.filter((e) => !isBonus(e.code));
+  const bonusEarnings = input.earnings.filter((e) => isBonus(e.code));
+  const regularEarningsTotal = regularEarnings.reduce((s, e) => s + e.amount, 0);
+  const bonusTotal = bonusEarnings.reduce((s, e) => s + e.amount, 0);
+  const deductionsWithStatutoryZeroLines = withStatutoryZeroLines(input.deductions);
+
+  drawTable('Regular Earnings', regularEarnings, regularEarningsTotal);
+  drawTable('Deductions', deductionsWithStatutoryZeroLines, input.totalDeductions);
+  if (bonusEarnings.length > 0) {
+    drawTable('Bonus / Incentives', bonusEarnings, bonusTotal);
+  }
   if (input.contributions.length > 0) {
     const contributionsTotal = input.contributions.reduce((s, c) => s + c.amount, 0);
     drawTable('Employer Contributions (not deducted from net pay)', input.contributions, contributionsTotal);
