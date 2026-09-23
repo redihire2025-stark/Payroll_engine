@@ -122,7 +122,7 @@ function ExpensesPanel() {
       ) : claims.length === 0 ? (
         <EmptyState icon={<ReceiptIcon width={20} height={20} />} title="No expense claims yet" description="Submit a claim and track its status here." />
       ) : (
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2.5 md:grid md:grid-cols-2">
           {claims.map((c) => (
             <div key={c.id} className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
@@ -249,7 +249,7 @@ function LoansPanel() {
       ) : loans.length === 0 ? (
         <EmptyState icon={<BanknoteIcon width={20} height={20} />} title="No loans yet" description="Request a loan and track approval and repayments here." />
       ) : (
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2.5 md:grid md:grid-cols-2">
           {loans.map((l) => (
             <button key={l.id} onClick={() => setExpandedId(expandedId === l.id ? null : l.id)} className="w-full rounded-xl border border-border bg-surface p-4 text-left">
               <div className="flex items-center gap-3">

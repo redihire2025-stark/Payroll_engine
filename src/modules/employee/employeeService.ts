@@ -127,6 +127,40 @@ export async function getEmployee(employeeId: string): Promise<EmployeeDetailRec
   };
 }
 
+export interface EmployeePayslipSidebar {
+  bankName: string | null;
+  bankIfsc: string | null;
+  bankAccountOnFile: boolean;
+  pfNumber: string | null;
+  uan: string | null;
+  panOnFile: boolean;
+}
+
+/**
+ * The extra letterhead-style fields a payslip conventionally shows
+ * (bank, PF/UAN, PAN) beyond the core employee record. Bank account number
+ * and PAN are stored pgp-encrypted at the application layer (see
+ * employee_bank_accounts / employee_tax_profiles in
+ * 0001_core_schema.sql) and there's no decrypt pathway wired up yet, so
+ * this only reports whether one is on file rather than the actual value —
+ * everything else here (bank name, IFSC, PF number, UAN) is plaintext.
+ */
+export async function getEmployeePayslipSidebar(employeeId: string): Promise<EmployeePayslipSidebar> {
+  const [{ data: bank }, { data: statutory }, { data: tax }] = await Promise.all([
+    supabase.from('employee_bank_accounts').select('bank_name, ifsc').eq('employee_id', employeeId).order('is_primary', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('employee_statutory_profiles').select('pf_number, uan').eq('employee_id', employeeId).maybeSingle(),
+    supabase.from('employee_tax_profiles').select('pan_encrypted').eq('employee_id', employeeId).maybeSingle(),
+  ]);
+  return {
+    bankName: (bank?.bank_name as string) ?? null,
+    bankIfsc: (bank?.ifsc as string) ?? null,
+    bankAccountOnFile: Boolean(bank),
+    pfNumber: (statutory?.pf_number as string) ?? null,
+    uan: (statutory?.uan as string) ?? null,
+    panOnFile: Boolean(tax?.pan_encrypted),
+  };
+}
+
 export interface CreateEmployeeInput {
   companyId: string;
   employeeCode: string;

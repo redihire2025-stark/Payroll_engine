@@ -172,7 +172,7 @@ export default function EssHome() {
         {!balancesQuery.isLoading && (balancesQuery.data?.length ?? 0) === 0 ? (
           <EmptyState title="No leave balances set up yet" description="Your leave balances will appear here once your admin configures leave policies." />
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {(balancesQuery.data ?? []).map((lt) => {
               const style = leaveStyle(lt.name);
               return (

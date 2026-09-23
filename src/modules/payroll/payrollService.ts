@@ -114,12 +114,14 @@ export async function listMyPayslips(employeeId: string): Promise<MyPayslipRow[]
 export interface PayrollItemDetail extends PayrollItemRow {
   earnings: { code: string; amount: number }[];
   deductions: { code: string; amount: number }[];
+  /** The employee's full (unprorated) monthly entitlement per earning component, straight from the snapshot runPayroll.ts captured before applying LOP proration — lets the UI show a "Full vs Actual" column the way most payslip formats do. Empty when the run predates the snapshot shape (falls back to the actual amount). */
+  fullEarnings: { code: string; amount: number }[];
 }
 
 export async function getPayrollItemForEmployee(runId: string, employeeId: string): Promise<PayrollItemDetail | null> {
   const { data: item, error } = await supabase
     .from('payroll_items')
-    .select('id, employee_id, gross_earnings, total_deductions, net_pay, lop_days')
+    .select('id, employee_id, gross_earnings, total_deductions, net_pay, lop_days, salary_structure_snapshot')
     .eq('payroll_run_id', runId)
     .eq('employee_id', employeeId)
     .maybeSingle();
@@ -131,6 +133,11 @@ export async function getPayrollItemForEmployee(runId: string, employeeId: strin
     supabase.from('payroll_deductions').select('component_code, amount').eq('payroll_item_id', item.id),
   ]);
 
+  const snapshot = item.salary_structure_snapshot as unknown as { components?: { code: string; amount: number }[] } | null;
+  const fullEarnings = (snapshot?.components ?? [])
+    .filter((c) => (earnings ?? []).some((e) => e.component_code === c.code))
+    .map((c) => ({ code: c.code, amount: Number(c.amount) }));
+
   return {
     id: item.id,
     employeeId: item.employee_id,
@@ -141,5 +148,6 @@ export async function getPayrollItemForEmployee(runId: string, employeeId: strin
     lopDays: Number(item.lop_days),
     earnings: (earnings ?? []).map((e) => ({ code: e.component_code as string, amount: Number(e.amount) })),
     deductions: (deductions ?? []).map((d) => ({ code: d.component_code as string, amount: Number(d.amount) })),
+    fullEarnings,
   };
 }

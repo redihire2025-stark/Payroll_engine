@@ -94,7 +94,7 @@ export default function EssLeave() {
           ) : (balancesQuery.data?.length ?? 0) === 0 ? (
             <EmptyState icon={<CalendarIcon width={20} height={20} />} title="No leave balances yet" description="Leave balances appear once your admin configures leave policies for your company." />
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               {(balancesQuery.data ?? []).map((lt) => {
                 const style = leaveStyle(lt.name);
                 return (
@@ -193,7 +193,7 @@ export default function EssLeave() {
           ) : (historyQuery.data?.length ?? 0) === 0 ? (
             <EmptyState title="No leave requests yet" description="Requests you submit will show up here with their status." />
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 md:grid md:grid-cols-2">
               {(historyQuery.data ?? []).map((l) => {
                 const style = leaveStyle(l.leaveType);
                 return (
@@ -225,7 +225,7 @@ export default function EssLeave() {
           ) : (holidaysQuery.data?.length ?? 0) === 0 ? (
             <EmptyState icon={<CalendarIcon width={20} height={20} />} title="No holidays listed yet" description="Your admin hasn't added the company holiday calendar yet." />
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-2.5">
               {(holidaysQuery.data ?? []).map((h) => {
                 const isPast = h.date < todayIso;
                 return (

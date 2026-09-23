@@ -158,7 +158,7 @@ export default function EssAttendance() {
           ) : (correctionsQuery.data?.length ?? 0) === 0 ? (
             <EmptyState title="No correction requests yet" description="Requests you submit will show up here with their status." />
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 md:grid md:grid-cols-2">
               {(correctionsQuery.data ?? []).map((c) => (
                 <div key={c.id} className="rounded-xl border border-border bg-surface p-4">
                   <div className="flex items-center justify-between">

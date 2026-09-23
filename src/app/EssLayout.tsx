@@ -19,9 +19,14 @@ const tabs = [
  * replaces the bottom nav and the content column widens instead of
  * staying pinned to a 430px phone frame — that was the bug (desktop
  * Chrome showed the mobile layout letterboxed in the middle of the
- * page). Two separate <Outlet/> instances toggled by CSS would double
- * every page's data fetches, so instead only the nav chrome (sidebar vs.
- * bottom bar) and the content wrapper's width/padding are conditional.
+ * page). The content column caps at 1400px rather than the old 768px
+ * (max-w-3xl) — on a real desktop monitor that left most of the screen
+ * empty next to a 240px sidebar; individual pages opt into wider grids
+ * (2-col lists, a table + sidebar split) instead of staying single-column
+ * at that width. Two separate <Outlet/> instances toggled by CSS would
+ * double every page's data fetches, so instead only the nav chrome
+ * (sidebar vs. bottom bar) and the content wrapper's width/padding are
+ * conditional.
  */
 export default function EssLayout() {
   const { user, logout } = useSession();
@@ -71,7 +76,7 @@ export default function EssLayout() {
         </button>
       </aside>
 
-      <div className="flex w-full max-w-[430px] flex-col bg-bg shadow-2xl md:max-w-3xl md:px-8 md:py-8 md:shadow-none">
+      <div className="flex w-full max-w-[430px] flex-col bg-bg shadow-2xl md:max-w-[1400px] md:px-8 md:py-8 md:shadow-none">
         <div className="flex-1 overflow-y-auto pb-20 md:pb-0">
           <Outlet />
         </div>
