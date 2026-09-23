@@ -112,7 +112,11 @@ export default function EssProfile() {
         <Avatar name={user?.name ?? ''} size={56} />
         <div>
           <div className="text-[17px] font-bold text-text">{user?.name}</div>
-          <div className="text-[12.5px] text-text-faint">{employee?.designation ?? user?.email}</div>
+          <div className="text-[12.5px] text-text-faint">
+            {employee?.code && <span className="font-mono-num font-semibold text-text-muted">{employee.code}</span>}
+            {employee?.code && (employee?.designation ?? user?.email) && ' · '}
+            {employee?.designation ?? user?.email}
+          </div>
         </div>
       </div>
 
@@ -122,6 +126,9 @@ export default function EssProfile() {
         <Section
           title="Personal Info"
           rows={[
+            { label: 'Employee ID', value: employee.code ?? '—' },
+            { label: 'Department', value: employee.department ?? '—' },
+            { label: 'Date of Joining', value: employee.doj ?? '—' },
             { label: 'Phone', value: employee.phone ?? '—' },
             { label: 'Personal Email', value: employee.personalEmail ?? '—' },
             { label: 'Date of Birth', value: employee.dob ?? '—' },
