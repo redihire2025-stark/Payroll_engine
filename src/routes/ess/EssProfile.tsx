@@ -10,6 +10,7 @@ import { ResignationPanel } from './ResignationPanel';
 import { MyAssetsPanel } from './MyAssetsPanel';
 import { HelpdeskPanel } from './HelpdeskPanel';
 import { PerformancePanel } from './PerformancePanel';
+import { LettersPanel } from './LettersPanel';
 
 function Section({ title, rows }: { title: string; rows: { label: string; value: string }[] }) {
   return (
@@ -27,7 +28,7 @@ function Section({ title, rows }: { title: string; rows: { label: string; value:
 
 export default function EssProfile() {
   const { user, logout } = useSession();
-  const [panel, setPanel] = useState<'documents' | 'resignation' | 'assets' | 'helpdesk' | 'performance' | null>(null);
+  const [panel, setPanel] = useState<'documents' | 'resignation' | 'assets' | 'helpdesk' | 'performance' | 'letters' | null>(null);
   const { data: employee, error } = useQuery({
     queryKey: ['employee', user?.employeeId],
     queryFn: () => getEmployee(user!.employeeId),
@@ -84,6 +85,16 @@ export default function EssProfile() {
     );
   }
 
+  if (panel === 'letters') {
+    return (
+      <div className="flex flex-col gap-4 px-5 pt-6">
+        <button onClick={() => setPanel(null)} className="self-start text-[12.5px] font-semibold text-accent">← Back to Profile</button>
+        <div className="text-[19px] font-bold text-text">Letters</div>
+        <LettersPanel />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 px-5 pt-6">
       <div className="flex items-center gap-3.5">
@@ -116,6 +127,7 @@ export default function EssProfile() {
           { icon: BoxIcon, label: 'My Assets', onClick: () => setPanel('assets') },
           { icon: HelpCircleIcon, label: 'Helpdesk', onClick: () => setPanel('helpdesk') },
           { icon: TargetIcon, label: 'Performance', onClick: () => setPanel('performance') },
+          { icon: FileTextIcon, label: 'Letters', onClick: () => setPanel('letters') },
         ].map(({ icon: Icon, label, onClick }) => (
           <button
             key={label}
