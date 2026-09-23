@@ -34,6 +34,7 @@ const nav = [
   { to: '/admin/payroll', label: 'Payroll', icon: BanknoteIcon },
   { to: '/admin/reimbursements', label: 'Reimbursements & Loans', icon: ReceiptIcon },
   { to: '/admin/letters', label: 'Letters', icon: FileTextIcon },
+  { to: '/admin/tax-declarations', label: 'Tax Declarations', icon: ShieldIcon },
   { to: '/admin/assets', label: 'Assets', icon: BoxIcon },
   { to: '/admin/helpdesk', label: 'Helpdesk', icon: HelpCircleIcon },
   { to: '/admin/performance', label: 'Performance', icon: TargetIcon },

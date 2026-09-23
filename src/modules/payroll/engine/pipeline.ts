@@ -43,7 +43,7 @@ export function applyRuleSets(input: PayrollCalculationInput, prorated: SalaryCo
       results.push(
         calculateTds(
           {
-            projectedAnnualTaxableIncome: gross * 12,
+            projectedAnnualTaxableIncome: Math.max(0, gross * 12 - (input.declaredExemptions ?? 0)),
             monthsRemainingInYear: 12,
             tdsAlreadyDeductedThisYear: 0,
           },

@@ -13,6 +13,8 @@ import { listEmployeesLite } from '@/modules/employee/employeeService';
 import { getCurrentSalaryAssignment, getStructureComponents } from '@/modules/salary/salaryService';
 import { calculatePayrollItem } from './engine/pipeline';
 import type { PayrollCalculationInput, RuleConfig, SalaryComponentInput } from './engine/types';
+import { getVerifiedExemptionsTotal } from '@/modules/tax/taxService';
+import { financialYearFor } from '@/modules/tax/financialYear';
 
 // Sensible Indian statutory defaults, used whenever a company hasn't
 // configured its own payroll_rule_sets yet — a run should never silently
@@ -159,9 +161,10 @@ export async function executePayrollRun(runId: string, companyId: string, calcul
       continue;
     }
 
-    const [salaryComponents, lopDays] = await Promise.all([
+    const [salaryComponents, lopDays, declaredExemptions] = await Promise.all([
       loadSalaryComponents(assignment.salaryStructureId),
       countAbsentDays(employee.id, periodStart, periodEnd),
+      getVerifiedExemptionsTotal(employee.id, financialYearFor(periodEnd)),
     ]);
     if (salaryComponents.length === 0) {
       skipped.push({ employeeId: employee.id, reason: 'Salary structure has no components' });
@@ -174,6 +177,7 @@ export async function executePayrollRun(runId: string, companyId: string, calcul
       attendance: { workingDays, presentDays: workingDays - lopDays, paidLeaveDays: 0, lopDays },
       ruleSets,
       otherDeductions: [],
+      declaredExemptions,
     };
     const result = calculatePayrollItem(input);
 

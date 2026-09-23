@@ -25,6 +25,8 @@ export interface PayrollCalculationInput {
   attendance: AttendanceInput;
   ruleSets: RuleConfig[];
   otherDeductions: { code: string; label: string; amount: number }[];
+  /** Annual sum of the employee's *verified* tax declaration exemptions, subtracted before the TDS slab calculation. */
+  declaredExemptions?: number;
 }
 
 export interface RuleResult {

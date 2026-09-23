@@ -11,6 +11,7 @@ import { MyAssetsPanel } from './MyAssetsPanel';
 import { HelpdeskPanel } from './HelpdeskPanel';
 import { PerformancePanel } from './PerformancePanel';
 import { LettersPanel } from './LettersPanel';
+import { TaxDeclarationPanel } from './TaxDeclarationPanel';
 
 function Section({ title, rows }: { title: string; rows: { label: string; value: string }[] }) {
   return (
@@ -28,7 +29,7 @@ function Section({ title, rows }: { title: string; rows: { label: string; value:
 
 export default function EssProfile() {
   const { user, logout } = useSession();
-  const [panel, setPanel] = useState<'documents' | 'resignation' | 'assets' | 'helpdesk' | 'performance' | 'letters' | null>(null);
+  const [panel, setPanel] = useState<'documents' | 'resignation' | 'assets' | 'helpdesk' | 'performance' | 'letters' | 'tax' | null>(null);
   const { data: employee, error } = useQuery({
     queryKey: ['employee', user?.employeeId],
     queryFn: () => getEmployee(user!.employeeId),
@@ -95,6 +96,16 @@ export default function EssProfile() {
     );
   }
 
+  if (panel === 'tax') {
+    return (
+      <div className="flex flex-col gap-4 px-5 pt-6">
+        <button onClick={() => setPanel(null)} className="self-start text-[12.5px] font-semibold text-accent">← Back to Profile</button>
+        <div className="text-[19px] font-bold text-text">Tax Declaration</div>
+        <TaxDeclarationPanel />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 px-5 pt-6">
       <div className="flex items-center gap-3.5">
@@ -121,7 +132,7 @@ export default function EssProfile() {
       <div className="rounded-xl border border-border bg-surface">
         {[
           { icon: FileTextIcon, label: 'Documents', onClick: () => setPanel('documents') },
-          { icon: ShieldIcon, label: 'Tax Declaration', onClick: undefined },
+          { icon: ShieldIcon, label: 'Tax Declaration', onClick: () => setPanel('tax') },
           { icon: BellIcon, label: 'Notification Settings', onClick: undefined },
           { icon: AlertIcon, label: 'Resignation', onClick: () => setPanel('resignation') },
           { icon: BoxIcon, label: 'My Assets', onClick: () => setPanel('assets') },

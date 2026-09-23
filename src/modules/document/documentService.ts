@@ -33,19 +33,24 @@ export interface UploadDocumentInput {
   uploadedBy: string;
 }
 
-export async function uploadDocument(input: UploadDocumentInput): Promise<void> {
+export async function uploadDocument(input: UploadDocumentInput): Promise<string> {
   const ext = input.file.name.split('.').pop() || 'bin';
   const path = `${input.companyId}/${input.employeeId}/${Date.now()}-${input.documentType.replace(/\s+/g, '-')}.${ext}`;
   const { error: uploadErr } = await supabase.storage.from('employee-documents').upload(path, input.file);
   if (uploadErr) throw uploadErr;
 
-  const { error: insertErr } = await supabase.from('employee_documents').insert({
-    employee_id: input.employeeId,
-    document_type: input.documentType,
-    storage_path: path,
-    uploaded_by: input.uploadedBy,
-  });
+  const { data, error: insertErr } = await supabase
+    .from('employee_documents')
+    .insert({
+      employee_id: input.employeeId,
+      document_type: input.documentType,
+      storage_path: path,
+      uploaded_by: input.uploadedBy,
+    })
+    .select('id')
+    .single();
   if (insertErr) throw insertErr;
+  return data.id as string;
 }
 
 export async function getSignedDocumentUrl(documentId: string): Promise<string> {
