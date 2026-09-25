@@ -6,7 +6,7 @@ import { Badge } from '@/shared/ui/Badge';
 import { SearchInput, Select } from '@/shared/ui/Input';
 import { Avatar } from '@/shared/ui/Avatar';
 import { EmptyState, ErrorState, LoadingRows } from '@/shared/ui/EmptyState';
-import { PlusIcon, UsersIcon } from '@/shared/ui/icons';
+import { PlusIcon, UsersIcon, FilterIcon, XIcon } from '@/shared/ui/icons';
 import { useSession } from '@/shared/lib/session';
 import { listEmployees } from '@/modules/employee/employeeService';
 import { getCompany } from '@/modules/company/companyService';
@@ -46,7 +46,8 @@ export default function Employees() {
     if (statusFilter !== 'all' && e.status !== statusFilter) return false;
     return true;
   });
-  const filtersActive = Boolean(searchLower) || departmentFilter !== 'all' || branchFilter !== 'all' || statusFilter !== 'all';
+  const activeFilterCount = [Boolean(searchLower), departmentFilter !== 'all', branchFilter !== 'all', statusFilter !== 'all'].filter(Boolean).length;
+  const filtersActive = activeFilterCount > 0;
 
   function clearFilters() {
     setSearch('');
@@ -81,7 +82,17 @@ export default function Employees() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+        <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-text-muted">
+          <FilterIcon width={14} height={14} />
+          Filters
+          {filtersActive && (
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
+              {activeFilterCount}
+            </span>
+          )}
+        </div>
+        <div className="h-5 w-px bg-border" />
         <SearchInput placeholder="Search by name or employee code…" value={search} onChange={setSearch} />
         <Select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}>
           <option value="all">All Departments</option>
@@ -98,8 +109,12 @@ export default function Employees() {
           <option value="exited">Exited</option>
         </Select>
         {filtersActive && (
-          <button onClick={clearFilters} className="text-[12.5px] font-semibold text-accent hover:underline">
-            Clear filters
+          <button
+            onClick={clearFilters}
+            className="ml-auto flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[12.5px] font-semibold text-text-faint transition-colors hover:bg-bg hover:text-danger"
+          >
+            <XIcon width={13} height={13} />
+            Clear
           </button>
         )}
       </div>

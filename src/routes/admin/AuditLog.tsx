@@ -5,7 +5,7 @@ import { Button } from '@/shared/ui/Button';
 import { Badge, type BadgeTone } from '@/shared/ui/Badge';
 import { Select, SearchInput } from '@/shared/ui/Input';
 import { EmptyState, ErrorState, LoadingRows } from '@/shared/ui/EmptyState';
-import { ShieldIcon } from '@/shared/ui/icons';
+import { ShieldIcon, FilterIcon, XIcon } from '@/shared/ui/icons';
 import { useSession } from '@/shared/lib/session';
 import { listAuditLogs } from '@/modules/audit/auditService';
 
@@ -39,7 +39,8 @@ export default function AuditLog() {
     if (cutoff !== null && new Date(a.createdAt).getTime() < cutoff) return false;
     return true;
   });
-  const filtersActive = Boolean(searchLower) || moduleFilter !== 'all' || dateRange !== '30d';
+  const activeFilterCount = [Boolean(searchLower), moduleFilter !== 'all', dateRange !== '30d'].filter(Boolean).length;
+  const filtersActive = activeFilterCount > 0;
 
   function clearFilters() {
     setSearch('');
@@ -54,7 +55,17 @@ export default function AuditLog() {
         <p className="mt-0.5 text-[13px] text-text-faint">Every sensitive action, who performed it, and when</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+        <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-text-muted">
+          <FilterIcon width={14} height={14} />
+          Filters
+          {filtersActive && (
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
+              {activeFilterCount}
+            </span>
+          )}
+        </div>
+        <div className="h-5 w-px bg-border" />
         <SearchInput placeholder="Search entity or actor…" value={search} onChange={setSearch} />
         <Select value={moduleFilter} onChange={(e) => setModuleFilter(e.target.value)}>
           <option value="all">All Modules</option>
@@ -67,8 +78,12 @@ export default function AuditLog() {
           <option value="all">All time</option>
         </Select>
         {filtersActive && (
-          <button onClick={clearFilters} className="text-[12.5px] font-semibold text-accent hover:underline">
-            Clear filters
+          <button
+            onClick={clearFilters}
+            className="ml-auto flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[12.5px] font-semibold text-text-faint transition-colors hover:bg-bg hover:text-danger"
+          >
+            <XIcon width={13} height={13} />
+            Clear
           </button>
         )}
       </div>

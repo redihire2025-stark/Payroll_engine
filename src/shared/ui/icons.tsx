@@ -93,3 +93,6 @@ export const BriefcaseIcon = (p: IconProps) => (
 export const MenuIcon = (p: IconProps) => (
   <svg {...base} {...p}><path d="M4 6h16M4 12h16M4 18h16" /></svg>
 );
+export const FilterIcon = (p: IconProps) => (
+  <svg {...base} {...p}><path d="M4 5h16l-6.5 7.5V19l-3 1.5v-8Z" /></svg>
+);
