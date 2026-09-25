@@ -161,6 +161,35 @@ export async function getEmployeePayslipSidebar(employeeId: string): Promise<Emp
   };
 }
 
+export interface AdminBankDetails {
+  bankName: string | null;
+  ifsc: string | null;
+  accountLast4: string | null;
+  panLast4: string | null;
+  pfNumber: string | null;
+  uan: string | null;
+}
+
+/** Masked read (last 4 digits only) — see netlify/functions/employee-bank-details.ts. */
+export async function getEmployeeBankDetails(employeeId: string): Promise<AdminBankDetails> {
+  return callNetlifyFunction('employee-bank-details', { action: 'get', employeeId });
+}
+
+export interface SaveBankDetailsInput {
+  employeeId: string;
+  bankName?: string;
+  ifsc?: string;
+  accountNumber?: string;
+  panNumber?: string;
+  pfNumber?: string;
+  uan?: string;
+}
+
+/** Encrypts account number + PAN server-side before storing — see netlify/functions/employee-bank-details.ts. */
+export async function saveEmployeeBankDetails(input: SaveBankDetailsInput): Promise<void> {
+  await callNetlifyFunction('employee-bank-details', { action: 'save', ...input });
+}
+
 export interface CreateEmployeeInput {
   companyId: string;
   employeeCode: string;

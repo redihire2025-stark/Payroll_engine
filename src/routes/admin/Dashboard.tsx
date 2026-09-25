@@ -1,5 +1,7 @@
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader } from '@/shared/ui/Card';
+import { Badge } from '@/shared/ui/Badge';
 import { StatTile } from '@/shared/ui/StatTile';
 import { EmptyState, ErrorState, LoadingRows } from '@/shared/ui/EmptyState';
 import { useSession } from '@/shared/lib/session';
@@ -8,6 +10,11 @@ import { listLeaveRequests } from '@/modules/leave/leaveService';
 import { listCorrections } from '@/modules/attendance/attendanceService';
 import { listPayrollRuns } from '@/modules/payroll/payrollService';
 import { UsersIcon, BanknoteIcon } from '@/shared/ui/icons';
+
+const runStatusTone = {
+  draft: 'neutral', calculating: 'info', calculated: 'info', under_review: 'warning',
+  approved: 'info', locked: 'warning', paid: 'success', cancelled: 'danger',
+} as const;
 
 export default function Dashboard() {
   const { user } = useSession();
@@ -46,60 +53,61 @@ export default function Dashboard() {
             <StatTile label="Payroll Runs" value={String(runs.length)} />
           </div>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="flex flex-col gap-6 lg:col-span-2">
-              <Card>
-                <CardHeader title="Payroll Runs" subtitle="Most recent first" />
-                {runs.length === 0 ? (
-                  <div className="px-5 py-2 pb-5">
-                    <EmptyState
-                      icon={<BanknoteIcon width={22} height={22} />}
-                      title="No payroll runs yet"
-                      description="Once payroll processing is connected, runs created here will appear in this list."
-                    />
-                  </div>
-                ) : (
-                  <div className="flex flex-col">
-                    {runs.map((run) => (
-                      <div key={run.id} className="flex items-center justify-between border-b border-border-soft px-5 py-3.5 text-[13px] last:border-b-0">
-                        <div className="font-medium text-text">{run.periodStart} – {run.periodEnd}</div>
-                        <span className="text-text-muted">{run.status.replace('_', ' ')}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
-            </div>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader
+                title="Pending Approvals"
+                subtitle={`${pendingLeave.length + pendingCorrections.length} items need your review`}
+              />
+              {pendingLeave.length + pendingCorrections.length === 0 ? (
+                <div className="px-5 py-2 pb-5">
+                  <EmptyState
+                    icon={<UsersIcon width={20} height={20} />}
+                    title="Nothing pending"
+                    description="Leave and attendance correction requests will show up here."
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col divide-y divide-border-soft">
+                  {pendingLeave.slice(0, 3).map((l) => (
+                    <div key={l.id} className="px-5 py-3 text-[12.5px]">
+                      <div className="font-semibold text-text">{l.employeeName}</div>
+                      <div className="text-text-faint">{l.leaveType} · {l.days}d</div>
+                    </div>
+                  ))}
+                  {pendingCorrections.slice(0, 3).map((c) => (
+                    <div key={c.id} className="px-5 py-3 text-[12.5px]">
+                      <div className="font-semibold text-text">{c.employeeName}</div>
+                      <div className="text-text-faint">Attendance correction</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
 
-            <div className="flex flex-col gap-6">
-              <Card>
-                <CardHeader title="Pending Approvals" subtitle={`${pendingLeave.length + pendingCorrections.length} items need your review`} />
-                {pendingLeave.length + pendingCorrections.length === 0 ? (
-                  <div className="px-5 py-2 pb-5">
-                    <EmptyState
-                      icon={<UsersIcon width={20} height={20} />}
-                      title="Nothing pending"
-                      description="Leave and attendance correction requests will show up here."
-                    />
+            <Card>
+              <CardHeader
+                title="Latest Payroll Run"
+                action={<Link to="/admin/payroll" className="text-[12.5px] font-semibold text-accent">View all →</Link>}
+              />
+              {runs.length === 0 ? (
+                <div className="px-5 py-2 pb-5">
+                  <EmptyState
+                    icon={<BanknoteIcon width={22} height={22} />}
+                    title="No payroll runs yet"
+                    description="Create your first payroll run from the Payroll page."
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center justify-between px-5 py-5">
+                  <div>
+                    <div className="text-[15px] font-semibold text-text">{runs[0].periodStart} – {runs[0].periodEnd}</div>
+                    <div className="mt-1 text-[12px] text-text-faint">{runs.length} run{runs.length === 1 ? '' : 's'} total</div>
                   </div>
-                ) : (
-                  <div className="flex flex-col divide-y divide-border-soft">
-                    {pendingLeave.slice(0, 3).map((l) => (
-                      <div key={l.id} className="px-5 py-3 text-[12.5px]">
-                        <div className="font-semibold text-text">{l.employeeName}</div>
-                        <div className="text-text-faint">{l.leaveType} · {l.days}d</div>
-                      </div>
-                    ))}
-                    {pendingCorrections.slice(0, 3).map((c) => (
-                      <div key={c.id} className="px-5 py-3 text-[12.5px]">
-                        <div className="font-semibold text-text">{c.employeeName}</div>
-                        <div className="text-text-faint">Attendance correction</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
-            </div>
+                  <Badge tone={runStatusTone[runs[0].status]}>{runs[0].status.replace('_', ' ')}</Badge>
+                </div>
+              )}
+            </Card>
           </div>
         </>
       )}
