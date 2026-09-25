@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
+import { ChevronDownIcon } from './icons';
 
 export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
@@ -19,12 +20,21 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
+/**
+ * Native <select> arrows render inconsistently across browsers/OSes and
+ * sat off-center against the app's other icons — appearance-none hides
+ * the native one and a positioned ChevronDownIcon replaces it, matching
+ * every other dropdown affordance in the app.
+ */
 export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select
-      {...props}
-      className={`rounded-lg border border-border bg-white px-3 py-2.5 text-[13px] text-text focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent ${props.className ?? ''}`}
-    />
+    <div className="relative inline-flex">
+      <select
+        {...props}
+        className={`appearance-none rounded-lg border border-border bg-white py-2.5 pl-3 pr-8 text-[13px] text-text focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent ${props.className ?? ''}`}
+      />
+      <ChevronDownIcon width={13} height={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-text-faint" />
+    </div>
   );
 }
 
